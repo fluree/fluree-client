@@ -1,0 +1,4 @@
+TODO
+ - implement transact()
+ - provide docstrings to methods, etc
+ -  
