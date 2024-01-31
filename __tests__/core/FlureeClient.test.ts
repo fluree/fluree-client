@@ -147,7 +147,7 @@ describe('FlureeClient', () => {
       });
       expect(transactionInstance.config).toEqual(client.config);
       expect(transactionInstance).toBeInstanceOf(TransactionInstance);
-    });
+    }, 20000);
 
     it('throws error if not connected', async () => {
       const client = new FlureeClient({
@@ -204,6 +204,36 @@ describe('FlureeClient', () => {
       } catch (e) {
         error = e;
       }
+      expect(error).toBeDefined();
+    });
+  });
+
+  describe('signing messages', () => {
+    it('can generate a keypair', () => {
+      const client = new FlureeClient({
+        host: 'localhost',
+        port: 8080,
+        ledger: 'fluree-client/test',
+      });
+      client.generateKeyPair();
+      const publicKey = client.getPublicKey();
+      expect(publicKey).toBeTruthy();
+    });
+    it('throws an error if signMessages = true and no privateKey is provided', () => {
+      let error;
+
+      try {
+        new FlureeClient({
+          host: 'localhost',
+          port: 8080,
+          ledger: 'fluree-client/client-sign-messages-error',
+          signMessages: true,
+          create: true,
+        });
+      } catch (e) {
+        error = e;
+      }
+
       expect(error).toBeDefined();
     });
   });

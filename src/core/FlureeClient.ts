@@ -1,27 +1,3 @@
-/*
-
-I want my typescript lib to export an instance called 'flureeCLient' of a class called 'FlureeClient'. I want to be able to import it like this:
-
-```
-import { flureeClient } from 'fluree-client';
-```
-
-I expect to be able to use the instance like this:
-
-```
-const flureeInstance = flureeClient.configure({...});
-```
-
-The instance should have methods such as '.query()' and '.transact()' that return interim request objects that can be chained together like this:
-
-```
-const response = await flureeInstance.query({ ... }).sign({ ... }).time({ ... }).send();
-```
-
-Help me to begin to write the typescript files necessary to make this happen. I expect to be able to publish this library so that a user can do all of the above.
-
- */
-
 import { IFlureeConfig } from '../interfaces/IFlureeConfig';
 import { IFlureeHistoryQuery } from '../interfaces/IFlureeHistoryQuery';
 import { IFlureeQuery } from '../interfaces/IFlureeQuery';
@@ -30,27 +6,39 @@ import { FlureeError } from './FlureeError';
 import { HistoryQueryInstance } from './HistoryQueryInstance';
 import { QueryInstance } from './QueryInstance';
 import { TransactionInstance } from './TransactionInstance';
+import {
+  generateKeyPair,
+  pubKeyFromPrivate,
+  accountIdFromPublic,
+} from '@fluree/crypto';
 
+/**
+ * FlureeClient is the main class for interacting with FlureeDB
+ * @example
+ * const client = new FlureeClient({
+ *   host: 'localhost',
+ *   port: 8080,
+ *   ledger: 'fluree-client/client',
+ * }).connect();
+ *
+ * await client.query({ select: { "freddy": ["*"]} }).send();
+ */
 export class FlureeClient {
   config: IFlureeConfig;
   connected: boolean;
 
   constructor(config: IFlureeConfig) {
-    const { host, port, ledger, create } = config;
     this.#checkConfig(config);
-    const defaultConfig = {
-      timeout: 30000,
-      host,
-      port,
-      ledger,
-      create,
-    };
-    this.config = { ...defaultConfig, ...config };
+    const { privateKey } = config;
+    this.config = config;
+    if (privateKey) {
+      this.setKey(privateKey);
+    }
     this.connected = false;
   }
 
   #checkConfig(config?: IFlureeConfig): void {
-    const { host, ledger } = config || this.config;
+    const { host, ledger, signMessages, privateKey } = config || this.config;
     if (!host) {
       throw new FlureeError(
         'host is required on either FlureeClient or connect'
@@ -60,6 +48,9 @@ export class FlureeClient {
       throw new FlureeError(
         'ledger is required on either FlureeClient or connect'
       );
+    }
+    if (signMessages && !privateKey) {
+      throw new FlureeError('privateKey is required when signMessages is true');
     }
   }
 
@@ -165,5 +156,25 @@ export class FlureeClient {
       query.from = this.config.ledger;
     }
     return new HistoryQueryInstance(query, this.config);
+  }
+
+  setKey(privateKey: string): FlureeClient {
+    const publicKey = pubKeyFromPrivate(privateKey);
+    const accountId = accountIdFromPublic(publicKey);
+    const did = `did:fluree:${accountId}`;
+    this.configure({ privateKey, publicKey, did });
+    return this;
+  }
+
+  generateKeyPair(): FlureeClient {
+    const { private: privateKey, public: publicKey } = generateKeyPair();
+    const accountId = accountIdFromPublic(publicKey);
+    const did = `did:fluree:${accountId}`;
+    this.configure({ privateKey, publicKey, did });
+    return this;
+  }
+
+  getPublicKey(): string | undefined {
+    return this.config.publicKey;
   }
 }
