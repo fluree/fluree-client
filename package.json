@@ -13,10 +13,10 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "jest --detectOpenHandles --verbose --silent=false",
+    "test": "jest --detectOpenHandles --silent=false",
     "lint": "eslint --ext .ts src",
     "coverage": "jest --coverage --silent=false",
-    "test:watch": "jest --watch --verbose --silent=false",
+    "test:watch": "jest --watch --silent=false",
     "generate-docs": "ts-readme"
   },
   "author": "",

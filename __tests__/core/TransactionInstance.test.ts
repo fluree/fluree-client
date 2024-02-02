@@ -1,5 +1,6 @@
 import { FlureeClient } from '../../src';
 import { verifyJWS } from '@fluree/crypto';
+import { mergeContexts } from '../../src/utils/contextHandler';
 
 describe('TransactionInstance', () => {
   it('can send a transaction', async () => {
@@ -16,7 +17,6 @@ describe('TransactionInstance', () => {
         },
       })
       .send();
-    console.log(JSON.stringify(response, null, 2));
     expect(response).toBeDefined();
   });
 
@@ -44,7 +44,7 @@ describe('TransactionInstance', () => {
 
   describe('signing', () => {
     // TODO: Need to speak with Dan to understand how to test this
-    it.skip('can use sign() to sign a transaction', async () => {
+    it('can use sign() to sign a transaction', async () => {
       if (!process.env.TEST_PRIVATE_KEY) {
         fail('TEST_PRIVATE_KEY not defined');
       }
@@ -54,22 +54,37 @@ describe('TransactionInstance', () => {
       const client = await new FlureeClient({
         host: process.env.FLUREE_CLIENT_TEST_HOST,
         port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
-        ledger: 'fluree-client/sign-function',
+        ledger: 'fluree-client/sign-function-transact',
         create: true,
         privateKey: process.env.TEST_PRIVATE_KEY,
       }).connect();
+      const did = client.getDid();
+      if (!did) {
+        fail('DID not defined');
+      }
       await client
         .transact({
-          '@context': [
-            'https://ns.flur.ee',
+          '@context': {
+            f: 'https://ns.flur.ee/ledger#',
+          },
+          insert: [
             {
-              f: 'https://ns.flur.ee/ledger#',
+              '@id': 'ex:rootPolicy',
+              '@type': ['f:Policy'],
+              'f:targetNode': { '@id': 'f:allNodes' },
+              'f:allow': [
+                {
+                  '@id': 'ex:rootAccessAllow',
+                  'f:targetRole': { '@id': 'ex:rootRole' },
+                  'f:action': [{ '@id': 'f:view' }, { '@id': 'f:modify' }],
+                },
+              ],
+            },
+            {
+              '@id': did,
+              'f:role': { '@id': 'ex:rootRole' },
             },
           ],
-          insert: {
-            '@id': process.env.TEST_DID,
-            'f:role': { '@id': 'f:userRole' },
-          },
         })
         .send();
       const response = await client
@@ -104,7 +119,7 @@ describe('TransactionInstance', () => {
         })
         .getSignedTransaction();
 
-      const verificationResult = verifyJWS(signedTransaction);
+      const verificationResult = verifyJWS(JSON.parse(signedTransaction));
 
       let pubkey, payload;
 
@@ -142,6 +157,76 @@ describe('TransactionInstance', () => {
       }
 
       expect(error).toBeDefined();
+    });
+  });
+
+  describe('context', () => {
+    it('can merge contexts from the config and the transaction', async () => {
+      const defaultContext = {
+        f: 'https://ns.flur.ee/ledger#',
+      };
+      const client = await new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: 'transaction/merge-contexts',
+        create: true,
+        defaultContext,
+      }).connect();
+      const context = [
+        'https://ns.flur.ee',
+        {
+          f: 'https://ns.flur.ee/ledger#',
+        },
+      ];
+      const transactionInstance = client.transact({
+        '@context': context,
+        insert: {
+          message: 'success',
+        },
+      });
+      const transactionBody = transactionInstance.getTransaction();
+      expect(transactionBody['@context']).toBeDefined();
+
+      expect(JSON.stringify(transactionBody['@context'])).toBe(
+        JSON.stringify(mergeContexts(defaultContext, context))
+      );
+    });
+
+    it('can handle empty contexts', async () => {
+      const client = await new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: 'fluree-client/empty-context-transact',
+        create: true,
+      }).connect();
+      const transactionInstance = client.transact({
+        '@context': { ex: 'http://example.org/' },
+        insert: {
+          message: 'success',
+        },
+      });
+      expect(transactionInstance.getTransaction()).toBeDefined();
+      expect(transactionInstance.getTransaction()['@context']).toBeInstanceOf(
+        Object
+      );
+      expect(transactionInstance.getTransaction()['@context']).toBeDefined();
+      expect(
+        JSON.stringify(transactionInstance.getTransaction()['@context'])
+      ).toBe(JSON.stringify({ ex: 'http://example.org/' }));
+
+      client.setContext('http://example.org/');
+
+      const transactionInstance2 = client.transact({
+        insert: {
+          message: 'success',
+        },
+      });
+
+      expect(transactionInstance2.getTransaction()).toBeDefined();
+      expect(transactionInstance2.getTransaction()['@context']).toBeDefined();
+      expect(
+        JSON.stringify(transactionInstance2.getTransaction()['@context'])
+      ).toBe(JSON.stringify('http://example.org/'));
     });
   });
 });

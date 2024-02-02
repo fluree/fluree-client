@@ -1,5 +1,5 @@
 type InsertObject = {
-  [key: string]: string | InsertStatement;
+  [key: string]: string | string[] | InsertStatement;
 };
 
 type InsertArray = Array<InsertObject>;

@@ -1,5 +1,9 @@
 import { GenericContainer } from 'testcontainers';
 
+/**
+ *
+ * @returns a new fluree container for use with tests
+ */
 async function generateFlureeContainer(): Promise<GenericContainer> {
   const container = await new GenericContainer('fluree/server:latest')
     .withExposedPorts(8090)

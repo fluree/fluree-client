@@ -27,9 +27,7 @@ describe('QueryInstance', () => {
     }
   });
 
-  // TODO: Need to speak with Dan to understand how to test this
-
-  it.skip('can use sign() to sign a query', async () => {
+  it('can use sign() to sign a query', async () => {
     if (!process.env.TEST_PRIVATE_KEY) {
       fail('TEST_PRIVATE_KEY not defined');
     }
@@ -43,11 +41,41 @@ describe('QueryInstance', () => {
       create: true,
       privateKey: process.env.TEST_PRIVATE_KEY,
     }).connect();
+    const did = client.getDid();
+    if (!did) {
+      fail('DID not defined');
+    }
+
+    await client
+      .transact({
+        '@context': {
+          f: 'https://ns.flur.ee/ledger#',
+        },
+        insert: [
+          {
+            '@id': 'ex:rootPolicy',
+            '@type': ['f:Policy'],
+            'f:targetNode': { '@id': 'f:allNodes' },
+            'f:allow': [
+              {
+                '@id': 'ex:rootAccessAllow',
+                'f:targetRole': { '@id': 'ex:rootRole' },
+                'f:action': [{ '@id': 'f:view' }, { '@id': 'f:modify' }],
+              },
+            ],
+          },
+          {
+            '@id': did,
+            'f:role': { '@id': 'ex:rootRole' },
+          },
+        ],
+      })
+      .send();
     const response = await client
       .query({
-        selectOne: '?s',
+        select: { did: ['*'] },
       })
-      .sign(process.env.TEST_DID)
+      .sign()
       .send();
     expect(response).toBeDefined();
   });
@@ -75,7 +103,7 @@ describe('QueryInstance', () => {
       })
       .getSignedQuery();
 
-    const verificationResult = verifyJWS(signedQuery);
+    const verificationResult = verifyJWS(JSON.parse(signedQuery));
 
     let pubkey, payload;
 
@@ -110,5 +138,42 @@ describe('QueryInstance', () => {
       error = e;
     }
     expect(error).toBeDefined();
+  });
+
+  describe('context', () => {
+    it('can handle empty contexts', async () => {
+      const client = await new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: 'fluree-client/empty-context',
+        create: true,
+      }).connect();
+      const queryInstance = client.query({
+        '@context': { ex: 'http://example.org/' },
+        where: { '@id': '?s' },
+        select: '?s',
+      });
+      expect(queryInstance.query).toBeDefined();
+      expect(queryInstance.query['@context']).toBeInstanceOf(Object);
+      expect(queryInstance.query['@context']).toBeDefined();
+      expect(JSON.stringify(queryInstance.query['@context'])).toBe(
+        JSON.stringify({ ex: 'http://example.org/' })
+      );
+
+      client.setContext({ ex: 'http://example.org/' });
+
+      const queryInstance2 = client.query({
+        '@context': {},
+        where: { '@id': '?s' },
+        select: '?s',
+      });
+
+      expect(queryInstance2.query).toBeDefined();
+      expect(queryInstance2.query['@context']).toBeInstanceOf(Object);
+      expect(queryInstance2.query['@context']).toBeDefined();
+      expect(JSON.stringify(queryInstance2.query['@context'])).toBe(
+        JSON.stringify({ ex: 'http://example.org/' })
+      );
+    });
   });
 });

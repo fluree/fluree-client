@@ -1,8 +1,8 @@
 type ContextString = string;
 
-type ContextValue = string | Record<string, string>;
+export type ContextValue = string | Record<string, string>;
 
-type ContextMap = {
+export type ContextMap = {
   [key: string]: ContextValue;
 };
 

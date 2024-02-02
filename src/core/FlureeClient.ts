@@ -2,6 +2,8 @@ import { IFlureeConfig } from '../interfaces/IFlureeConfig';
 import { IFlureeHistoryQuery } from '../interfaces/IFlureeHistoryQuery';
 import { IFlureeQuery } from '../interfaces/IFlureeQuery';
 import { IFlureeTransaction } from '../interfaces/IFlureeTransaction';
+import { ContextStatement } from '../types/ContextTypes';
+import { mergeContexts } from '../utils/contextHandler';
 import { FlureeError } from './FlureeError';
 import { HistoryQueryInstance } from './HistoryQueryInstance';
 import { QueryInstance } from './QueryInstance';
@@ -14,6 +16,14 @@ import {
 
 /**
  * FlureeClient is the main class for interacting with FlureeDB
+ * @param config - Configuration for the FlureeClient
+ * @param config.ledger - The ledger/db name on the Fluree instance
+ * @param config.host - The host where your instance is running
+ * @param config.port - The port where your instance is running
+ * @param config.create - If true, the ledger will be created if it does not exist
+ * @param config.privateKey - The private key to use for signing messages
+ * @param config.signMessages - If true, messages will be signed by default
+ * @param config.defaultContext - The default context to use for queries
  * @example
  * const client = new FlureeClient({
  *   host: 'localhost',
@@ -28,9 +38,33 @@ export class FlureeClient {
   connected: boolean;
 
   constructor(config: IFlureeConfig) {
-    this.#checkConfig(config);
-    const { privateKey } = config;
-    this.config = config;
+    const {
+      ledger,
+      host,
+      port,
+      create,
+      signMessages,
+      privateKey,
+      defaultContext,
+    } = config;
+    this.#checkConfig({
+      ledger,
+      host,
+      port,
+      create,
+      signMessages,
+      privateKey,
+      defaultContext,
+    });
+    this.config = {
+      ledger,
+      host,
+      port,
+      create,
+      signMessages,
+      privateKey,
+      defaultContext,
+    };
     if (privateKey) {
       this.setKey(privateKey);
     }
@@ -56,6 +90,14 @@ export class FlureeClient {
 
   configure(config: IFlureeConfig): FlureeClient {
     const mergedConfig = { ...this.config, ...config };
+    if (config.defaultContext) {
+      if (this.config.defaultContext) {
+        mergedConfig.defaultContext = mergeContexts(
+          this.config.defaultContext,
+          config.defaultContext
+        );
+      }
+    }
     this.config = mergedConfig;
     this.#checkConfig();
     return this;
@@ -75,7 +117,7 @@ export class FlureeClient {
     this.connected = true;
     try {
       if (this.config.create) {
-        await this.createLedger();
+        await this.#createLedger();
       }
       await this.#testLedgers();
     } catch (error) {
@@ -86,15 +128,12 @@ export class FlureeClient {
   }
 
   async create(ledger: string): Promise<FlureeClient> {
-    await this.createLedger(ledger);
-    console.log(
-      `Created ledger ${ledger}. Switching ledger from ${this.config.ledger} to ${ledger}.`
-    );
+    await this.#createLedger(ledger);
     this.configure({ ledger });
     return this;
   }
 
-  async createLedger(ledgerName?: string): Promise<void> {
+  async #createLedger(ledgerName?: string): Promise<void> {
     const { host, port } = this.config;
     let url = `http://${host}`;
     if (port) {
@@ -176,5 +215,28 @@ export class FlureeClient {
 
   getPublicKey(): string | undefined {
     return this.config.publicKey;
+  }
+
+  getDid(): string | undefined {
+    return this.config.did;
+  }
+
+  setContext(context: ContextStatement): FlureeClient {
+    this.configure({ defaultContext: context });
+    return this;
+  }
+
+  addToContext(context: ContextStatement): FlureeClient {
+    if (this.config.defaultContext) {
+      const newContext = mergeContexts(this.config.defaultContext, context);
+      this.config.defaultContext = newContext;
+    } else {
+      this.config.defaultContext = context;
+    }
+    return this;
+  }
+
+  getContext(): ContextStatement | undefined {
+    return this.config.defaultContext;
   }
 }

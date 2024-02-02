@@ -73,6 +73,26 @@ describe('FlureeClient', () => {
       }
       expect(error).toBeDefined();
     });
+    it('can update context with configure', () => {
+      const client = new FlureeClient({
+        host: 'localhost',
+        port: 8080,
+        ledger: 'fluree-client/test',
+        defaultContext: 'https://ns.flur.ee/ledger#',
+      });
+      const configuredClient = client.configure({
+        defaultContext: {
+          schema: 'http://schema.org/',
+        },
+      });
+      expect(configuredClient).toBeInstanceOf(FlureeClient);
+      expect(configuredClient.config.defaultContext).toEqual([
+        'https://ns.flur.ee/ledger#',
+        {
+          schema: 'http://schema.org/',
+        },
+      ]);
+    });
   });
 
   describe('connect()', () => {
@@ -219,6 +239,19 @@ describe('FlureeClient', () => {
       const publicKey = client.getPublicKey();
       expect(publicKey).toBeTruthy();
     });
+
+    it('can return a did from a keypair', () => {
+      const privateKey = process.env.TEST_PRIVATE_KEY || '';
+      const did = process.env.TEST_DID || '';
+      const client = new FlureeClient({
+        host: 'localhost',
+        port: 8080,
+        ledger: 'fluree-client/test',
+        privateKey,
+      });
+      const didFromKey = client.getDid();
+      expect(didFromKey).toBe(did);
+    });
     it('throws an error if signMessages = true and no privateKey is provided', () => {
       let error;
 
@@ -235,6 +268,177 @@ describe('FlureeClient', () => {
       }
 
       expect(error).toBeDefined();
+    });
+
+    it('can sign a message when policy is appropriate', async () => {
+      const client = new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: uuid(),
+        create: true,
+        privateKey:
+          '509553eece84d5a410f1012e8e19e84e938f226aa3ad144e2d12f36df0f51c1e',
+      });
+
+      await client.connect();
+
+      client.setContext([
+        'https://ns.flur.ee',
+        {
+          f: 'https://ns.flur.ee/ledger#',
+          graph: '@graph',
+          rdf: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+          schema: 'http://schema.org/',
+          id: '@id',
+          wiki: 'https://www.wikidata.org/wiki/',
+          ex: 'http://example.com/ns/',
+          rdfs: 'http://www.w3.org/2000/01/rdf-schema#',
+          type: '@type',
+          sh: 'http://www.w3.org/ns/shacl#',
+          skos: 'http://www.w3.org/2008/05/skos#',
+          xsd: 'http://www.w3.org/2001/XMLSchema#',
+        },
+      ]);
+
+      await client
+        .transact({
+          insert: [
+            {
+              id: 'ex:alice',
+              type: 'ex:User',
+              'ex:secret': "alice's secret",
+            },
+            {
+              id: 'ex:bob',
+              type: 'ex:User',
+              'ex:secret': "bob's secret",
+            },
+            {
+              id: 'ex:UserPolicy',
+              type: ['f:Policy'],
+              'f:targetClass': {
+                id: 'ex:User',
+              },
+              'f:allow': [
+                {
+                  id: 'ex:globalViewAllow',
+                  'f:targetRole': {
+                    id: 'ex:userRole',
+                  },
+                  'f:action': [
+                    {
+                      id: 'f:view',
+                    },
+                  ],
+                },
+              ],
+              'f:property': [
+                {
+                  'f:path': {
+                    id: 'ex:secret',
+                  },
+                  'f:allow': [
+                    {
+                      id: 'ex:secretsRule',
+                      'f:targetRole': {
+                        id: 'ex:userRole',
+                      },
+                      'f:action': [
+                        {
+                          id: 'f:view',
+                        },
+                        {
+                          id: 'f:modify',
+                        },
+                      ],
+                      'f:equals': {
+                        '@list': [
+                          {
+                            id: 'f:$identity',
+                          },
+                          {
+                            id: 'ex:user',
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              id: client.getDid() || 'did:fluree:xxx',
+              'ex:user': {
+                id: 'ex:alice',
+              },
+              'f:role': {
+                id: 'ex:userRole',
+              },
+            },
+          ],
+        })
+        .send();
+      const signedTransaction = client
+        .transact({
+          insert: [
+            {
+              id: 'ex:alice',
+              'ex:secret': "alice's new secret",
+            },
+          ],
+        })
+        .sign();
+
+      let result, error;
+
+      try {
+        result = await signedTransaction.send();
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeUndefined();
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe('context', () => {
+    it('can set a context', () => {
+      const client = new FlureeClient({
+        host: 'localhost',
+        port: 8080,
+        ledger: 'fluree-client/test',
+      });
+      const context = [
+        'https://ns.flur.ee',
+        {
+          f: 'https://ns.flur.ee/ledger#',
+        },
+      ];
+      client.setContext(context);
+      expect(JSON.stringify(client.config.defaultContext)).toEqual(
+        JSON.stringify(context)
+      );
+    });
+
+    it('can add to context', () => {
+      const client = new FlureeClient({
+        host: 'localhost',
+        port: 8080,
+        ledger: 'fluree-client/test',
+      });
+      client.addToContext('https://ns.flur.ee/ledger#');
+      client.addToContext({
+        schema: 'http://schema.org/',
+      });
+      expect(JSON.stringify(client.getContext())).toEqual(
+        JSON.stringify([
+          'https://ns.flur.ee/ledger#',
+          {
+            schema: 'http://schema.org/',
+          },
+        ])
+      );
     });
   });
 });
