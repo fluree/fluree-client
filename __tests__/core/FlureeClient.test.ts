@@ -13,28 +13,31 @@ describe('FlureeClient', () => {
       expect(client).toBeInstanceOf(FlureeClient);
     });
 
-    it('throws error if host is not defined', () => {
+    it('can instantiate FlureeClient without any config options', () => {
+      const client = new FlureeClient();
+      expect(client).toBeInstanceOf(FlureeClient);
+    });
+
+    it('throws error if host is not defined on connection attempt', async () => {
       let error;
       try {
-        new FlureeClient({
-          host: '',
+        await new FlureeClient({
           port: 8080,
           ledger: 'fluree-client/client',
-        });
+        }).connect();
       } catch (e) {
         error = e;
       }
       expect(error).toBeDefined();
     });
 
-    it('throws error if ledger is not defined', () => {
+    it('throws error if ledger is not defined on connection attempt', async () => {
       let error;
       try {
-        new FlureeClient({
+        await new FlureeClient({
           host: 'localhost',
           port: 8080,
-          ledger: '',
-        });
+        }).connect();
       } catch (e) {
         error = e;
       }
@@ -56,23 +59,6 @@ describe('FlureeClient', () => {
       expect(configuredClient.config.ledger).toEqual('fluree-client/newTest');
     });
 
-    it('throws error if configre() updates without host or ledger', () => {
-      const client = new FlureeClient({
-        host: 'localhost',
-        port: 8080,
-        ledger: 'fluree-client/client',
-      });
-      let error;
-      try {
-        client.configure({
-          host: '',
-          ledger: 'fluree/client/newTest',
-        });
-      } catch (e) {
-        error = e;
-      }
-      expect(error).toBeDefined();
-    });
     it('can update context with configure', () => {
       const client = new FlureeClient({
         host: 'localhost',
@@ -270,8 +256,10 @@ describe('FlureeClient', () => {
       expect(error).toBeDefined();
     });
 
-    it('can sign a message when policy is appropriate', async () => {
+    it('can successfully transact a signed message when policy is appropriate', async () => {
       const client = new FlureeClient({
+        // host: 'localhost',
+        // port: 58090,
         host: process.env.FLUREE_CLIENT_TEST_HOST,
         port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
         ledger: uuid(),
@@ -282,52 +270,48 @@ describe('FlureeClient', () => {
 
       await client.connect();
 
-      client.setContext([
-        'https://ns.flur.ee',
-        {
-          f: 'https://ns.flur.ee/ledger#',
-          graph: '@graph',
-          rdf: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-          schema: 'http://schema.org/',
-          id: '@id',
-          wiki: 'https://www.wikidata.org/wiki/',
-          ex: 'http://example.com/ns/',
-          rdfs: 'http://www.w3.org/2000/01/rdf-schema#',
-          type: '@type',
-          sh: 'http://www.w3.org/ns/shacl#',
-          skos: 'http://www.w3.org/2008/05/skos#',
-          xsd: 'http://www.w3.org/2001/XMLSchema#',
-        },
-      ]);
+      client.setContext({
+        f: 'https://ns.flur.ee/ledger#',
+        ex: 'http://example.org/',
+      });
+
+      const did = client.getDid();
+
+      if (!did) {
+        fail('DID not defined');
+      }
 
       await client
         .transact({
+          '@context': {
+            'f:equals': { '@container': '@list' },
+          },
           insert: [
             {
-              id: 'ex:alice',
-              type: 'ex:User',
+              '@id': 'ex:alice',
+              '@type': 'ex:User',
               'ex:secret': "alice's secret",
             },
             {
-              id: 'ex:bob',
-              type: 'ex:User',
+              '@id': 'ex:bob',
+              '@type': 'ex:User',
               'ex:secret': "bob's secret",
             },
             {
-              id: 'ex:UserPolicy',
-              type: ['f:Policy'],
+              '@id': 'ex:userPolicy',
+              '@type': ['f:Policy'],
               'f:targetClass': {
-                id: 'ex:User',
+                '@id': 'ex:User',
               },
               'f:allow': [
                 {
-                  id: 'ex:globalViewAllow',
+                  '@id': 'ex:globalViewAllow',
                   'f:targetRole': {
-                    id: 'ex:userRole',
+                    '@id': 'ex:userRole',
                   },
                   'f:action': [
                     {
-                      id: 'f:view',
+                      '@id': 'f:view',
                     },
                   ],
                 },
@@ -335,54 +319,53 @@ describe('FlureeClient', () => {
               'f:property': [
                 {
                   'f:path': {
-                    id: 'ex:secret',
+                    '@id': 'ex:secret',
                   },
                   'f:allow': [
                     {
-                      id: 'ex:secretsRule',
+                      '@id': 'ex:secretsRule',
                       'f:targetRole': {
-                        id: 'ex:userRole',
+                        '@id': 'ex:userRole',
                       },
                       'f:action': [
                         {
-                          id: 'f:view',
+                          '@id': 'f:view',
                         },
                         {
-                          id: 'f:modify',
+                          '@id': 'f:modify',
                         },
                       ],
-                      'f:equals': {
-                        '@list': [
-                          {
-                            id: 'f:$identity',
-                          },
-                          {
-                            id: 'ex:user',
-                          },
-                        ],
-                      },
+                      'f:equals': [
+                        {
+                          '@id': 'f:$identity',
+                        },
+                        {
+                          '@id': 'ex:user',
+                        },
+                      ],
                     },
                   ],
                 },
               ],
             },
             {
-              id: client.getDid() || 'did:fluree:xxx',
+              '@id': did,
               'ex:user': {
-                id: 'ex:alice',
+                '@id': 'ex:alice',
               },
               'f:role': {
-                id: 'ex:userRole',
+                '@id': 'ex:userRole',
               },
             },
           ],
         })
         .send();
+
       const signedTransaction = client
         .transact({
           insert: [
             {
-              id: 'ex:alice',
+              '@id': 'ex:alice',
               'ex:secret': "alice's new secret",
             },
           ],

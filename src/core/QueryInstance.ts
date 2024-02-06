@@ -4,6 +4,22 @@ import { mergeContexts } from '../utils/contextHandler';
 import { FlureeError } from './FlureeError';
 import { createJWS } from '@fluree/crypto';
 
+/**
+ * Class representing a query instance.
+ * @example
+ * const client = await new FlureeClient({
+ *  host: localhost,
+ *  port: 8080,
+ *  ledger: 'test/query',
+ * }).connect();
+ *
+ * const query = client
+ *  .query({
+ *   select: { "freddy": ["*"] }
+ *  })
+ *
+ * const response = await query.send();
+ */
 export class QueryInstance {
   query;
   config;
@@ -23,6 +39,12 @@ export class QueryInstance {
     }
   }
 
+  /**
+   * This async method sends the query to the Fluree instance
+   * @returns Promise<any> - The response from the query
+   * @example
+   * const response = await query.send();
+   */
   async send() {
     const query = this.signedQuery || JSON.stringify(this.query);
     const { host, port } = this.config;
@@ -53,6 +75,17 @@ export class QueryInstance {
       });
   }
 
+  /**
+   * Signs a query with the provided privateKey (or the privateKey from the config if none is provided)
+   * @param privateKey - (Optional) The private key to sign the query with
+   * @returns QueryInstance
+   * @example
+   * const signedQuery = query.sign(privateKey);
+   *
+   * // or
+   *
+   * const signedQuery = query.sign(); // if the privateKey is provided in the config
+   */
   sign(privateKey?: string): QueryInstance {
     const key = privateKey || this.config.privateKey;
     if (!key) {
@@ -67,12 +100,47 @@ export class QueryInstance {
     return this;
   }
 
-  setTime(time: string): QueryInstance {
-    this.query.t = time;
-    return this;
-  }
+  // setTime(time: string): QueryInstance {
+  //   this.query.t = time;
+  //   return this;
+  // }
 
+  /**
+   * Returns the signed query as a JWS string (if the query has been signed)
+   * @returns string
+   * @example
+   * const signedQuery = query.sign();
+   *
+   * const jwsString = query.getSignedQuery();
+   */
   getSignedQuery(): string {
     return this.signedQuery;
+  }
+
+  /**
+   * Returns the fully-qualified query object
+   * @returns IFlureeQuery
+   * @example
+   * const client = await new FlureeClient({
+   *  host: localhost,
+   *  port: 8080,
+   *  ledger: 'test/query',
+   * }).connect();
+   *
+   * const query = client
+   *  .query({
+   *   select: { "freddy": ["*"] }
+   *  })
+   *
+   * const queryObject = query.getQuery();
+   *
+   * console.log(queryObject);
+   * // {
+   * //   select: { "freddy": ["*"] }
+   * //   from: "test/query"
+   * // }
+   */
+  getQuery(): IFlureeQuery {
+    return this.query;
   }
 }

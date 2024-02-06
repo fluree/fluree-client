@@ -43,7 +43,6 @@ describe('TransactionInstance', () => {
   });
 
   describe('signing', () => {
-    // TODO: Need to speak with Dan to understand how to test this
     it('can use sign() to sign a transaction', async () => {
       if (!process.env.TEST_PRIVATE_KEY) {
         fail('TEST_PRIVATE_KEY not defined');
@@ -66,6 +65,7 @@ describe('TransactionInstance', () => {
         .transact({
           '@context': {
             f: 'https://ns.flur.ee/ledger#',
+            ex: 'http://example.org/',
           },
           insert: [
             {
@@ -95,7 +95,7 @@ describe('TransactionInstance', () => {
         })
         .sign()
         .send();
-      console.log(JSON.stringify(response, null, 2));
+
       expect(response).toBeDefined();
     }, 20000);
 

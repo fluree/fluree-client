@@ -1,4 +1,5 @@
 import { FlureeClient } from '../src/index';
+import { v4 as uuid } from 'uuid';
 
 describe('testContainer', () => {
   it('can connect', async () => {
@@ -11,7 +12,8 @@ describe('testContainer', () => {
     const client = new FlureeClient({
       host,
       port: port as number,
-      ledger: 'fluree-client/test',
+      ledger: uuid(),
+      create: true,
     });
     let error;
     try {
@@ -31,7 +33,8 @@ describe('testContainer', () => {
     const client = new FlureeClient({
       host,
       port: port as number,
-      ledger: 'fluree-client/test',
+      ledger: uuid(),
+      create: true,
     });
 
     await client.connect();
