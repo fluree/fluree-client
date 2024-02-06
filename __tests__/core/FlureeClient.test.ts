@@ -226,6 +226,22 @@ describe('FlureeClient', () => {
       expect(publicKey).toBeTruthy();
     });
 
+    it('can return a privateKey', () => {
+      const privateKey =
+        'fef21a1f4b65618ed2e8f5b2f37a2d6a0c4f0f816e656910253e81b1078fffd6';
+
+      const client = new FlureeClient({
+        host: 'localhost',
+        port: 8080,
+        ledger: 'fluree-client/test',
+        privateKey,
+      });
+
+      const privateKeyFromClient = client.getPrivateKey();
+
+      expect(privateKeyFromClient).toBe(privateKey);
+    });
+
     it('can return a did from a keypair', () => {
       const privateKey = process.env.TEST_PRIVATE_KEY || '';
       const did = process.env.TEST_DID || '';

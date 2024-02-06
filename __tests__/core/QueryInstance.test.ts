@@ -1,6 +1,7 @@
 import { FlureeClient } from '../../src';
 import { FlureeError } from '../../src/core/FlureeError';
 import { verifyJWS } from '@fluree/crypto';
+import { v4 as uuid } from 'uuid';
 
 describe('QueryInstance', () => {
   it('throws error on invalid query', async () => {
@@ -117,6 +118,22 @@ describe('QueryInstance', () => {
     expect(pubkey).toBeDefined();
     expect(pubkey).toBe(publicKey);
     expect(payload).toBeDefined();
+  });
+
+  it('can return a query object', async () => {
+    const client = await new FlureeClient({
+      host: process.env.FLUREE_CLIENT_TEST_HOST,
+      port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+      ledger: uuid(),
+      create: true,
+    }).connect();
+
+    const query = client.query({
+      select: { freddy: ['*'] },
+    });
+    const queryObject = query.getQuery();
+    expect(queryObject).toBeDefined();
+    expect(queryObject).toMatchObject({ select: { freddy: ['*'] } });
   });
 
   it('throws an error if sign() is called without any privateKey', async () => {
