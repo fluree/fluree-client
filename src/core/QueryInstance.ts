@@ -1,6 +1,7 @@
 import { IFlureeConfig } from '../interfaces/IFlureeConfig';
 import { IFlureeQuery } from '../interfaces/IFlureeQuery';
 import { mergeContexts } from '../utils/contextHandler';
+import { generateFetchParams } from '../utils/fetchOptions';
 import { FlureeError } from './FlureeError';
 import { createJWS } from '@fluree/crypto';
 
@@ -47,20 +48,10 @@ export class QueryInstance {
    */
   async send() {
     const query = this.signedQuery || JSON.stringify(this.query);
-    const { host, port } = this.config;
-    let url = `http://${host}`;
-    if (port) {
-      url += `:${port}`;
-    }
-    url += '/fluree/query';
+    const [url, fetchOptions] = generateFetchParams(this.config, 'query');
+    fetchOptions.body = query;
 
-    return fetch(url, {
-      method: 'POST',
-      body: query,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
+    return fetch(url, fetchOptions)
       .then((response) => {
         // if (response.status > 201) {
         //   throw new Error(response.statusText);

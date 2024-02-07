@@ -11,6 +11,8 @@ import { ContextStatement } from '../types/ContextTypes';
  * @param did - The DID to use for signing messages
  * @param signMessages - If true, messages will be signed by default
  * @param defaultContext - The default context to use for queries
+ * @param isFlureeHosted - If true, the client will use the Fluree hosted service
+ * @param apiKey - The API key to use for the Fluree hosted service
  */
 export interface IFlureeConfig {
   ledger?: string;
@@ -22,4 +24,6 @@ export interface IFlureeConfig {
   did?: string;
   signMessages?: boolean;
   defaultContext?: ContextStatement;
+  isFlureeHosted?: boolean;
+  apiKey?: string;
 }

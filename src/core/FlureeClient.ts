@@ -24,11 +24,13 @@ import {
  * @param config.privateKey - The private key to use for signing messages
  * @param config.signMessages - If true, messages will be signed by default
  * @param config.defaultContext - The default context to use for queries/txns
+ * @param config.isFlureeHosted - If true, the client will use the Fluree hosted service
+ * @param config.apiKey - The API key to use for the Fluree hosted service
  * @example
  * const client = new FlureeClient({
- *   host: 'localhost',
- *   port: 58090,
- *   ledger: 'fluree-client/client',
+ *   isFlureeHosted: true,
+ *   apiKey: process.env.FLUREE_API_KEY,
+ *   ledger: 'fluree-jld/387028092978173',
  * }).connect();
  *
  * await client.query({
@@ -50,12 +52,29 @@ export class FlureeClient {
   }
 
   #checkConfig(config: IFlureeConfig, isConnecting: boolean = false): void {
-    const { host, ledger, signMessages, privateKey } = config;
+    const {
+      host,
+      port,
+      ledger,
+      signMessages,
+      privateKey,
+      isFlureeHosted,
+      apiKey,
+      create,
+    } = config;
     if (isConnecting) {
-      if (!host) {
-        throw new FlureeError(
-          'host is required on either FlureeClient or connect'
-        );
+      if (isFlureeHosted) {
+        if (create) {
+          throw new FlureeError(
+            'cannot create a ledger through the Fluree hosted service API'
+          );
+        }
+      } else {
+        if (!host) {
+          throw new FlureeError(
+            'host is required on either FlureeClient or connect'
+          );
+        }
       }
       if (!ledger) {
         throw new FlureeError(
@@ -63,8 +82,29 @@ export class FlureeClient {
         );
       }
     }
+
     if (signMessages && !privateKey) {
       throw new FlureeError('privateKey is required when signMessages is true');
+    }
+
+    if (isFlureeHosted) {
+      if (host) {
+        throw new FlureeError(
+          '"host" should not be set when using the Fluree hosted service'
+        );
+      }
+
+      if (port) {
+        throw new FlureeError(
+          '"port" should not be set when using the Fluree hosted service'
+        );
+      }
+
+      if (!apiKey && !privateKey) {
+        console.warn(
+          'either an "apiKey" or a "privateKey" for signing messages is required when using the Fluree hosted service'
+        );
+      }
     }
   }
 
@@ -78,17 +118,17 @@ export class FlureeClient {
    * @param config.privateKey - The private key to use for signing messages
    * @param config.signMessages - If true, messages will be signed by default
    * @param config.defaultContext - The default context to use for queries/txns
+   * @param config.isFlureeHosted - If true, the client will use the Fluree hosted service
+   * @param config.apiKey - The API key to use for the Fluree hosted service
    * @returns FlureeClient
    * @example
    * const client = new FlureeClient({
-   *  host: 'localhost',
-   *  port: 8080,
-   *  ledger: 'fluree-client/client',
+   *   isFlureeHosted: true,
+   *   ledger: 'fluree-jld/387028092978173',
    * });
    *
    * const updatedClient = client.configure({
-   *  privateKey: 'XXXXXXXX',
-   *  signMessages: true
+   *   apiKey: process.env.FLUREE_API_KEY,
    * });
    */
   configure(config: IFlureeConfig): FlureeClient {
@@ -125,9 +165,9 @@ export class FlureeClient {
    * @returns Promise<FlureeClient>
    * @example
    * const connectedClient = await new FlureeClient({
-   *  host: 'localhost',
-   *  port: 8080,
-   *  ledger: 'fluree-client/client'
+   *   isFlureeHosted: true,
+   *   apiKey: process.env.FLUREE_API_KEY,
+   *   ledger: 'fluree-jld/387028092978173',
    * }).connect();
    */
   async connect(): Promise<FlureeClient> {
@@ -203,9 +243,9 @@ export class FlureeClient {
    * @returns QueryInstance
    * @example
    * const client = await new FlureeClient({
-   *  host: 'localhost',
-   *  port: 8080,
-   *  ledger: 'fluree-client/client'
+   *   isFlureeHosted: true,
+   *   apiKey: process.env.FLUREE_API_KEY,
+   *   ledger: 'fluree-jld/387028092978173',
    * }).connect();
    *
    * const queryInstance = client.query({
@@ -232,9 +272,9 @@ export class FlureeClient {
    * @returns TransactionInstance
    * @example
    * const client = await new FlureeClient({
-   *  host: 'localhost',
-   *  port: 8080,
-   *  ledger: 'fluree-client/client'
+   *   isFlureeHosted: true,
+   *   apiKey: process.env.FLUREE_API_KEY,
+   *   ledger: 'fluree-jld/387028092978173',
    * }).connect();
    *
    * const transaction = client.transact({
@@ -261,9 +301,9 @@ export class FlureeClient {
    * @returns HistoryQueryInstance
    * @example
    * const client = await new FlureeClient({
-   *  host: 'localhost',
-   *  port: 8080,
-   *  ledger: 'fluree-client/client'
+   *   isFlureeHosted: true,
+   *   apiKey: process.env.FLUREE_API_KEY,
+   *   ledger: 'fluree-jld/387028092978173',
    * }).connect();
    *
    * const historyQuery = client.history({
@@ -295,9 +335,9 @@ export class FlureeClient {
    * @returns FlureeClient
    * @example
    * const client = await new FlureeClient({
-   *  host: 'localhost',
-   *  port: 8080,
-   *  ledger: 'fluree-client/client'
+   *   isFlureeHosted: true,
+   *   apiKey: process.env.FLUREE_API_KEY,
+   *   ledger: 'fluree-jld/387028092978173',
    * }).connect();
    *
    * const privateKey = client.setKey('XXXXXXXX');
@@ -322,9 +362,9 @@ export class FlureeClient {
    * @returns FlureeClient
    * @example
    * const client = new FlureeClient({
-   *  host: 'localhost',
-   *  port: 8080,
-   *  ledger: 'fluree-client/client'
+   *   isFlureeHosted: true,
+   *   apiKey: process.env.FLUREE_API_KEY,
+   *   ledger: 'fluree-jld/387028092978173',
    * });
    *
    * client.generateKeyPair();
@@ -349,9 +389,9 @@ export class FlureeClient {
    * @returns string | undefined
    * @example
    * const client = new FlureeClient({
-   *  host: 'localhost',
-   *  port: 8080,
-   *  ledger: 'fluree-client/client'
+   *   isFlureeHosted: true,
+   *   apiKey: process.env.FLUREE_API_KEY,
+   *   ledger: 'fluree-jld/387028092978173',
    * });
    *
    * client.generateKeyPair();
@@ -367,9 +407,9 @@ export class FlureeClient {
    * @returns string | undefined
    * @example
    * const client = new FlureeClient({
-   *  host: 'localhost',
-   *  port: 8080,
-   *  ledger: 'fluree-client/client'
+   *   isFlureeHosted: true,
+   *   apiKey: process.env.FLUREE_API_KEY,
+   *   ledger: 'fluree-jld/387028092978173',
    * });
    *
    * client.generateKeyPair();
@@ -385,9 +425,9 @@ export class FlureeClient {
    * @returns string | undefined
    * @example
    * const client = new FlureeClient({
-   *  host: 'localhost',
-   *  port: 8080,
-   *  ledger: 'fluree-client/client'
+   *   isFlureeHosted: true,
+   *   apiKey: process.env.FLUREE_API_KEY,
+   *   ledger: 'fluree-jld/387028092978173',
    * });
    *
    * client.generateKeyPair();
@@ -398,6 +438,19 @@ export class FlureeClient {
     return this.config.did;
   }
 
+  // TODO: Implement this
+  // async insertDid(did?: string): Promise<void> {
+  //   const didKey = did || this.config.did;
+  //   if (!didKey) {
+  //     throw new FlureeError(
+  //       'did is required; try calling generateKeyPair() or passing a did string as a parameter'
+  //     );
+  //   }
+  //   await this.transact({
+  //     insert: { '@id': didKey },
+  //   }).send();
+  // }
+
   /**
    * Sets the default context for the FlureeClient instance. This context will be used for all queries and transactions by default.
    *
@@ -406,9 +459,9 @@ export class FlureeClient {
    * @returns FlureeClient
    * @example
    * const client = new FlureeClient({
-   *  host: 'localhost',
-   *  port: 8080,
-   *  ledger: 'fluree-client/client'
+   *   isFlureeHosted: true,
+   *   apiKey: process.env.FLUREE_API_KEY,
+   *   ledger: 'fluree-jld/387028092978173',
    *  defaultContext: { "schema": "http://schema.org/" }
    * });
    *
@@ -431,9 +484,9 @@ export class FlureeClient {
    * @returns FlureeClient
    * @example
    * const client = new FlureeClient({
-   *  host: 'localhost',
-   *  port: 8080,
-   *  ledger: 'fluree-client/client'
+   *   isFlureeHosted: true,
+   *   apiKey: process.env.FLUREE_API_KEY,
+   *   ledger: 'fluree-jld/387028092978173',
    *  defaultContext: { "schema": "http://schema.org/" }
    * });
    *
@@ -459,9 +512,9 @@ export class FlureeClient {
    * @returns ContextStatement | undefined
    * @example
    * const client = new FlureeClient({
-   *  host: 'localhost',
-   *  port: 8080,
-   *  ledger: 'fluree-client/client'
+   *   isFlureeHosted: true,
+   *   apiKey: process.env.FLUREE_API_KEY,
+   *   ledger: 'fluree-jld/387028092978173',
    *  defaultContext: { "schema": "http://schema.org/" }
    * });
    *

@@ -31,6 +31,41 @@ describe('FlureeClient', () => {
       expect(error).toBeDefined();
     });
 
+    it('throws error if host or port are defined when isFlureeHosted is true', async () => {
+      let hostError, portError;
+      try {
+        await new FlureeClient({
+          host: 'localhost',
+          isFlureeHosted: true,
+          ledger: process.env.TEST_NEXUS_LEDGER,
+        }).connect();
+      } catch (e) {
+        hostError = e;
+      }
+
+      try {
+        await new FlureeClient({
+          port: 8090,
+          isFlureeHosted: true,
+          ledger: process.env.TEST_NEXUS_LEDGER,
+        }).connect();
+      } catch (e) {
+        portError = e;
+      }
+
+      expect(hostError).toBeDefined();
+      expect(portError).toBeDefined();
+    });
+
+    it('warns if isFlureeHosted is true but no apiKey is set', async () => {
+      const logSpy = jest.spyOn(console, 'warn').mockImplementation();
+      new FlureeClient({
+        isFlureeHosted: true,
+        ledger: process.env.TEST_NEXUS_LEDGER,
+      });
+      expect(logSpy).toHaveBeenCalled();
+    });
+
     it('throws error if ledger is not defined on connection attempt', async () => {
       let error;
       try {
@@ -93,6 +128,16 @@ describe('FlureeClient', () => {
       expect(client).toBeInstanceOf(FlureeClient);
     });
 
+    it('can connect to a fluree-hosted ledger', async () => {
+      const client = new FlureeClient({
+        isFlureeHosted: true,
+        ledger: process.env.TEST_NEXUS_LEDGER,
+        apiKey: process.env.TEST_API_KEY,
+      });
+      await client.connect();
+      expect(client).toBeInstanceOf(FlureeClient);
+    });
+
     it('throws error if ledger does not exist on connect()', async () => {
       const client = new FlureeClient({
         host: process.env.FLUREE_CLIENT_TEST_HOST,
@@ -120,6 +165,22 @@ describe('FlureeClient', () => {
       await client.create(ledger);
       expect(client).toBeInstanceOf(FlureeClient);
       expect(client.config.ledger).toEqual(ledger);
+    });
+
+    it('cannot create a ledger if isFlureeHosted is true', async () => {
+      const ledger = uuid();
+      let error;
+      try {
+        await new FlureeClient({
+          isFlureeHosted: true,
+          ledger,
+          apiKey: process.env.TEST_API_KEY,
+          create: true,
+        }).connect();
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeDefined();
     });
 
     it('throws error if ledger already exists on create()', async () => {

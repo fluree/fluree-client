@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "jest --detectOpenHandles --silent=false",
+    "test": "jest --silent=false --forceExit",
     "lint": "eslint --ext .ts src",
     "coverage": "jest --coverage --silent=false",
     "test:watch": "jest --watch --silent=false",
@@ -39,6 +39,7 @@
   "dependencies": {
     "@fluree/crypto": "^3.0.0-alpha1",
     "@types/uuid": "^9.0.8",
+    "dotenv": "^16.4.1",
     "uuid": "^9.0.1"
   }
 }

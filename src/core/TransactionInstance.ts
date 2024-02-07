@@ -1,6 +1,7 @@
 import { IFlureeConfig } from '../interfaces/IFlureeConfig';
 import { IFlureeTransaction } from '../interfaces/IFlureeTransaction';
 import { mergeContexts } from '../utils/contextHandler';
+import { generateFetchParams } from '../utils/fetchOptions';
 import { FlureeError } from './FlureeError';
 import { createJWS } from '@fluree/crypto';
 
@@ -51,21 +52,10 @@ export class TransactionInstance {
   async send(): Promise<unknown> {
     const transaction =
       this.signedTransaction || JSON.stringify(this.transaction);
-    const { host, port } = this.config;
+    const [url, fetchOptions] = generateFetchParams(this.config, 'transact');
+    fetchOptions.body = transaction;
 
-    let url = `http://${host}`;
-    if (port) {
-      url += `:${port}`;
-    }
-    url += '/fluree/transact';
-
-    return fetch(url, {
-      method: 'POST',
-      body: transaction,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
+    return fetch(url, fetchOptions)
       .then((response) => {
         // if (response.status > 201) {
         //   throw new Error(response.statusText);

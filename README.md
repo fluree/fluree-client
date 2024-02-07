@@ -16,9 +16,9 @@ To use the Fluree client SDK, you need to import the `FlureeClient` class from t
 import { FlureeClient } from '@fluree/fluree-client';
 
 const client = new FlureeClient({
-  host: 'localhost',
-  port: 58090,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 }).connect();
 
 await client
@@ -34,7 +34,10 @@ The `FlureeClient` constructor takes an optional `config` object with the follow
 
 ```js
 {
+    isFlureeHosted, // [boolean] If true, the client will use the Fluree hosted service
+    apiKey, // [string] The API key to use for the Fluree hosted service
     ledger, // [string] The ledger/db name on the Fluree instance
+    // Do not set "host" and "port" if "isFlureeHosted" is true
     host, // [string] The host where your instance is running (e.g. localhost)
     port, // [number] The port where your instance is running (e.g. 58090)
     create, // [boolean] If true, the ledger will be created if it does not exist
@@ -66,9 +69,9 @@ You can also update the configuration of an existing client by using the `config
 
 ```js
 const client = new FlureeClient({
-  ledger: 'fluree-client/client',
-  host: 'localhost',
-  port: 58090,
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 });
 
 const privateKey = client.generateKeyPair();
@@ -103,9 +106,9 @@ It will also throw an error if the connection fails (e.g. invalid host, ledger d
 
 ```js
 const connectedClient = await new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 }).connect();
 ```
 
@@ -133,9 +136,9 @@ The `query()` method creates a new `QueryInstance` for querying the Fluree datab
 
 ```js
 const client = await new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 }).connect();
 
 const queryInstance = client.query({
@@ -145,24 +148,6 @@ const queryInstance = client.query({
 const response = await queryInstance.send();
 ```
 
-  <!-- /**
-   * Creates a new TransactionInstance for transacting with the Fluree database. The TransactionInstance can be used & re-used to build, sign, and send transactions to the Fluree instance.
-   * @param transaction {IFlureeTransaction} - The transaction to send to the Fluree instance
-   * @returns TransactionInstance
-   * @example
-   * const client = await new FlureeClient({
-   *  host: 'localhost',
-   *  port: 8080,
-   *  ledger: 'fluree-client/client'
-   * }).connect();
-   *
-   * const transaction = client.transact({
-   *  insert: { "@id": "freddy", "name": "Freddy" }
-   * });
-   *
-   * const response = await transaction.send();
-   */ -->
-
 #### `transact()`
 
 The `transact()` method creates a new `TransactionInstance` for transacting with the Fluree database. The `TransactionInstance` can be used & re-used to build, sign, and send transactions to the Fluree instance.
@@ -171,9 +156,9 @@ The `transact()` method creates a new `TransactionInstance` for transacting with
 
 ```js
 const client = await new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 }).connect();
 
 const transactionInstance = client.transact({
@@ -191,9 +176,9 @@ The `history()` method creates a new `HistoryQueryInstance` for querying the his
 
 ```js
 const client = await new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 }).connect();
 
 const historyQuery = client.history({
@@ -210,9 +195,9 @@ Automatically generates a new key pair and adds it to the FlureeClient instance.
 
 ```js
 const client = new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 });
 
 client.generateKeyPair();
@@ -228,9 +213,9 @@ The public key and DID will be derived from the private key and added to the Flu
 
 ```js
 const client = await new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 }).connect();
 
 const privateKey = 'XXX...XXX';
@@ -249,9 +234,9 @@ The `getPrivateKey()` method returns the private key of the FlureeClient instanc
 
 ```js
 const client = new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 });
 
 client.generateKeyPair();
@@ -265,9 +250,9 @@ The `getPublicKey()` method returns the public key of the FlureeClient instance 
 
 ```js
 const client = new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 });
 
 client.generateKeyPair();
@@ -281,9 +266,9 @@ The `getDid()` method returns the DID of the FlureeClient instance (if one has b
 
 ```js
 const client = new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 });
 
 client.generateKeyPair();
@@ -299,13 +284,13 @@ Unlike `addToContext()`, which merges new context elements into any existing con
 
 ```js
 const client = new FlureeClient({
-    host: 'localhost',
-    port: 8080,
-    ledger: 'fluree-client/client'
-    defaultContext: { "schema": "http://schema.org/" }
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
+  defaultContext: { schema: 'http://schema.org/' },
 });
 
-client.setContext({ "ex": "http://example.org/" });
+client.setContext({ ex: 'http://example.org/' });
 
 // client.getContext() === { "ex": "http://example.org/" }
 ```
@@ -318,13 +303,13 @@ If a default context already exists, the new context will be merged with the exi
 
 ```js
 const client = new FlureeClient({
-    host: 'localhost',
-    port: 8080,
-    ledger: 'fluree-client/client'
-    defaultContext: { "schema": "http://schema.org/" }
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
+  defaultContext: { schema: 'http://schema.org/' },
 });
 
-client.addToContext({ "ex": "http://example.org/" });
+client.addToContext({ ex: 'http://example.org/' });
 
 // client.getContext() === {
 //  "schema": "http://schema.org/",
@@ -332,31 +317,15 @@ client.addToContext({ "ex": "http://example.org/" });
 // }
 ```
 
-  <!-- /**
-   * Returns the default context for the FlureeClient instance (if one has been set)
-   * @returns ContextStatement | undefined
-   * @example
-   * const client = new FlureeClient({
-   *  host: 'localhost',
-   *  port: 8080,
-   *  ledger: 'fluree-client/client'
-   *  defaultContext: { "schema": "http://schema.org/" }
-   * });
-   *
-   * const context = client.getContext();
-   *
-   * // context === { "schema": "http://schema.org/" }
-   */ -->
-
 #### `getContext()`
 
 The `getContext()` method returns the default context for the FlureeClient instance (if one has been set).
 
 ```js
 const client = new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
   defaultContext: { schema: 'http://schema.org/' },
 });
 
@@ -371,9 +340,9 @@ The `QueryInstance` class is used to build, sign, and send queries to the Fluree
 
 ```js
 const client = await new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 }).connect();
 
 const queryInstance = client.query({
@@ -398,9 +367,9 @@ The `send()` method sends the query to the Fluree instance and returns the respo
 
 ```js
 const client = await new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 }).connect();
 
 const queryInstance = client.query({
@@ -416,9 +385,9 @@ The `sign()` method signs the query with the private key of the FlureeClient ins
 
 ```js
 const client = await new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 }).connect();
 
 let signedQueryInstance = client
@@ -446,9 +415,9 @@ The `getQuery()` method returns the query object of the QueryInstance.
 
 ```js
 const client = await new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
   defaultContext: { ex: 'http://example.org/' },
 }).connect();
 
@@ -472,9 +441,9 @@ The `getSignedQuery()` method returns the signed query of the QueryInstance in t
 
 ```js
 const client = await new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 }).connect();
 
 client.generateKeyPair();
@@ -497,9 +466,9 @@ The `TransactionInstance` class is used to build, sign, and send transactions to
 
 ```js
 const client = await new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 }).connect();
 
 const transaction = client.transact({
@@ -524,9 +493,9 @@ The `send()` method sends the transaction to the Fluree instance and returns the
 
 ```js
 const client = await new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 }).connect();
 
 const transaction = client.transact({
@@ -542,9 +511,9 @@ The `sign()` method signs the transaction with the private key of the FlureeClie
 
 ```js
 const client = await new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 }).connect();
 
 let signedTransaction = client
@@ -572,9 +541,9 @@ The `getTransaction()` method returns the transaction object of the TransactionI
 
 ```js
 const client = await new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 }).connect();
 
 const transaction = client.transact({
@@ -596,9 +565,9 @@ The `getSignedTransaction()` method returns the signed transaction of the Transa
 
 ```js
 const client = await new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 }).connect();
 
 client.generateKeyPair();
@@ -621,9 +590,9 @@ The `HistoryQueryInstance` class is used to build, sign, and send history querie
 
 ```js
 const client = await new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 }).connect();
 
 const historyQuery = client.history({
@@ -640,9 +609,9 @@ The `send()` method sends the history query to the Fluree instance and returns t
 
 ```js
 const client = await new FlureeClient({
-  host: 'localhost',
-  port: 8080,
-  ledger: 'fluree-client/client',
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+  ledger: 'fluree-jld/387028092978173',
 }).connect();
 
 const historyQuery = client.history({

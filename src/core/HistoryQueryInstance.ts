@@ -1,5 +1,6 @@
 import { IFlureeConfig } from '../interfaces/IFlureeConfig';
 import { IFlureeHistoryQuery } from '../interfaces/IFlureeHistoryQuery';
+import { generateFetchParams } from '../utils/fetchOptions';
 import { FlureeError } from './FlureeError';
 
 /**
@@ -39,19 +40,9 @@ export class HistoryQueryInstance {
    * const response = await historyQuery.send();
    */
   async send() {
-    const { host, port } = this.config;
-    let url = `http://${host}`;
-    if (port) {
-      url += `:${port}`;
-    }
-    url += '/fluree/history';
-    return fetch(url, {
-      method: 'POST',
-      body: JSON.stringify(this.query),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
+    const [url, fetchOptions] = generateFetchParams(this.config, 'history');
+    fetchOptions.body = JSON.stringify(this.query);
+    return fetch(url, fetchOptions)
       .then((response) => {
         // if (response.status > 201) {
         //   throw new Error(response.statusText);
