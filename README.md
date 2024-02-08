@@ -74,11 +74,8 @@ const client = new FlureeClient({
   ledger: 'fluree-jld/387028092978173',
 });
 
-const privateKey = client.generateKeyPair();
-
 client.configure({
-  privateKey,
-  signMessages: true,
+  ledger: 'fluree-jld/387028092978174',
 });
 ```
 
@@ -88,6 +85,7 @@ client.configure({
 - [create()](#create)
 - [query()](#query)
 - [transact()](#transact)
+- [upsert()](#upsert)
 - [history()](#history)
 - [generateKeyPair()](#generateKeyPair)
 - [setKey()](#setKey)
@@ -166,6 +164,54 @@ const transactionInstance = client.transact({
 });
 
 const response = await transactionInstance.send();
+```
+
+#### `upsert()`
+
+The `upsert()` method creates a new `TransactionInstance` for upserting with the Fluree database. The `TransactionInstance` can be used & re-used to build, sign, and send upsert transactions to the Fluree instance.
+
+> Upsert is not an API endpoint in Fluree. This method helps to transform an _upsert_ transaction into an _insert/where/delete_ transaction.
+>
+> Upsert assumes that the facts provided in the transaction should be treated as the true & accurate state of the data after the transaction is processed.
+>
+> This means that facts in your transaction should be inserted (if new) and should replace existing facts (if they exist on those subjects & properties).
+
+```js
+// Existing data:
+// [
+//   { "@id": "freddy", "name": "Freddy" },
+//   { "@id": "alice", "name": "Alice" }
+// ]
+
+const txnInstance = await client.upsert([
+  { '@id': 'freddy', name: 'Freddy the Yeti' },
+  { '@id': 'alice', age: 25 },
+]);
+
+const txnObject = txnInstance.getTransaction();
+
+console.log(txnObject);
+
+//  {
+//     where: [ { '@id': 'freddy', name: '?1' }, { '@id': 'alice', age: '?2' } ],
+//     delete: [ { '@id': 'freddy', name: '?1' }, { '@id': 'alice', age: '?2' } ],
+//     insert: [
+//       { '@id': 'freddy', name: 'Freddy the Yeti' },
+//       { '@id': 'alice', age: 25 }
+//     ],
+//     ledger: ...
+//   }
+
+const response = await txnInstance.send();
+
+// New data state after txn:
+// [
+//   { "@id": "freddy", "name": "Freddy the Yeti" },
+//   { "@id": "alice", "name": "Alice", "age": 25 }
+// ]
+
+// Note that if this had been an "insert" freddy would now have two names.
+// Note also that if this had been handled by deleting/insert, alice might have lost her name.
 ```
 
 #### `history()`
@@ -620,4 +666,8 @@ const historyQuery = client.history({
 });
 
 const response = await historyQuery.send();
+```
+
+```
+
 ```

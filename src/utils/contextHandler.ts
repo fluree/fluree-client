@@ -25,6 +25,7 @@ export function mergeContexts(
     } else if (Array.isArray(context2)) {
       return context1.concat(context2);
     } else {
+      if (Object.entries(context2).length === 0) return context1;
       return context1.concat([context2]);
     }
   } else {
@@ -36,6 +37,33 @@ export function mergeContexts(
     } else {
       return { ...context1, ...context2 };
     }
+  }
+}
+
+/**
+ * Find the alias for a given context. This includes searching through context arrays or nested context for any value of "@id"
+ * For example, if the context is ["https://ns.flur.ee/", { "ex": "https://example.com/", "id": "@id" }]
+ * Then "id" is serving as an alias for "@id"
+ * @param context the context to search for an alias
+ * @returns the alias for the context
+ */
+export function findIdAlias(context: ContextStatement): string {
+  if (typeof context === 'string') {
+    return '@id';
+  } else if (Array.isArray(context)) {
+    let result = '@id';
+    for (const item of context) {
+      result = findIdAlias(item);
+    }
+    return result;
+  } else {
+    let result = '@id';
+    for (const key in context) {
+      if (context[key] === '@id') {
+        result = key;
+      }
+    }
+    return result;
   }
 }
 

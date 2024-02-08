@@ -3,7 +3,9 @@ import { IFlureeHistoryQuery } from '../interfaces/IFlureeHistoryQuery';
 import { IFlureeQuery } from '../interfaces/IFlureeQuery';
 import { IFlureeTransaction } from '../interfaces/IFlureeTransaction';
 import { ContextStatement } from '../types/ContextTypes';
-import { mergeContexts } from '../utils/contextHandler';
+import { UpsertStatement } from '../types/TransactionTypes';
+import { findIdAlias, mergeContexts } from '../utils/contextHandler';
+import { handleUpsert } from '../utils/transactionUtils';
 import { FlureeError } from './FlureeError';
 import { HistoryQueryInstance } from './HistoryQueryInstance';
 import { QueryInstance } from './QueryInstance';
@@ -293,6 +295,52 @@ export class FlureeClient {
       transaction.ledger = this.config.ledger;
     }
     return new TransactionInstance(transaction, this.config);
+  }
+
+  /**
+   * Creates a new TransactionInstance for upserting with the Fluree database. The TransactionInstance can be used & re-used to build, sign, and send upsert transactions to the Fluree instance.
+   *
+   * Upsert is not an API endpoint in Fluree. This method helps to transform an upsert transaction into an insert/where/delete transaction.
+   *
+   * Upsert assumes that the facts provided in the transaction should be treated as the true & accurate state of the data after the transaction is processed.
+   *
+   * This means that facts in your transaction should be inserted (if new) and should replace existing facts (if they exist on those subjects & properties).
+   * @param transaction {UpsertStatement} - The upsert transaction to send to the Fluree instance
+   * @returns TransactionInstance
+   * @example
+   * // Existing data:
+   * // [
+   * //   { "@id": "freddy", "name": "Freddy" },
+   * //   { "@id": "alice", "name": "Alice" }
+   * // ]
+   *
+   * await client.upsert([
+   *  { "@id": "freddy", "name": "Freddy the Yeti" },
+   *  { "@id": "alice", "age": 25}
+   * ]).send();
+   *
+   * // New data state after txn:
+   * // [
+   * //   { "@id": "freddy", "name": "Freddy the Yeti" },
+   * //   { "@id": "alice", "name": "Alice", "age": 25 }
+   * // ]
+   *
+   * // Note that if this had been an "insert" freddy would now have two names.
+   * // Note also that if this had been handled by deleting/insert, alice might have lost her name.
+   */
+  upsert(transaction: UpsertStatement): TransactionInstance {
+    if (!this.connected) {
+      throw new FlureeError(
+        'You must connect before transacting. Try using .connect().transact() instead'
+      );
+    }
+    const transactionContext = transaction['@context'];
+    const idAlias = findIdAlias(
+      mergeContexts(this.config.defaultContext || {}, transactionContext || {})
+    );
+    const resultTransaction = handleUpsert(transaction, idAlias);
+    resultTransaction.ledger = transaction.ledger || this.config.ledger;
+    return new TransactionInstance(resultTransaction, this.config);
   }
 
   /**

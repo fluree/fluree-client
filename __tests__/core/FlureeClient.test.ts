@@ -1,6 +1,7 @@
 import { FlureeClient } from '../../src';
 import { v4 as uuid } from 'uuid';
 import { TransactionInstance } from '../../src/core/TransactionInstance';
+import { WhereStatement } from '../../src/types/WhereTypes';
 
 describe('FlureeClient', () => {
   describe('constructor', () => {
@@ -233,6 +234,246 @@ describe('FlureeClient', () => {
         error = e;
       }
       expect(error).toBeDefined();
+
+      let error2;
+      try {
+        client.upsert({
+          insert: {
+            message: 'success',
+          },
+        });
+      } catch (e) {
+        error2 = e;
+      }
+
+      expect(error2).toBeDefined();
+    });
+
+    it('can translate upsert() into transactionInstances', async () => {
+      const client = await new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: uuid(),
+        create: true,
+      }).connect();
+
+      const upsertTransaction = client.upsert([
+        {
+          '@id': 'ex:freddy',
+          name: 'Freddy the Yeti',
+          favoriteNumbers: [4, 5],
+          friends: [
+            {
+              '@id': 'ex:andrew',
+              name: 'Andrew',
+              friends: [{ '@id': 'ex:freddy' }],
+            },
+            { '@id': 'ex:alice' },
+            { '@id': 'ex:letty', name: 'Letty' },
+            { '@id': 'ex:bob' },
+            { name: 'blank guy' },
+          ],
+        },
+        {
+          '@id': 'ex:alice',
+          superHeroPower: 'mind reading',
+          friends: { '@id': 'ex:freddy' },
+        },
+      ]);
+
+      const transactionBody = upsertTransaction.getTransaction();
+
+      expect(upsertTransaction).toBeInstanceOf(TransactionInstance);
+      expect(transactionBody).toHaveProperty('where');
+      expect(transactionBody).toHaveProperty('delete');
+    });
+
+    it('can translate upsert() into transactionInstances with custom idAlias', async () => {
+      const client = await new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: uuid(),
+        create: true,
+        defaultContext: [
+          'https://ns.flur.ee/',
+          {
+            id: '@id',
+          },
+        ],
+      }).connect();
+
+      const upsertTransaction = client.upsert([
+        {
+          id: 'ex:freddy',
+          name: 'Freddy the Yeti',
+          favoriteNumbers: [4, 5],
+          friends: [
+            {
+              id: 'ex:andrew',
+              name: 'Andrew',
+              friends: [{ id: 'ex:freddy' }],
+            },
+            { id: 'ex:alice' },
+            { id: 'ex:letty', name: 'Letty' },
+            { id: 'ex:bob' },
+          ],
+        },
+        {
+          id: 'ex:alice',
+          superHeroPower: 'mind reading',
+          friends: { id: 'ex:freddy' },
+        },
+      ]);
+
+      const transactionBody = upsertTransaction.getTransaction();
+
+      console.log(JSON.stringify(transactionBody, null, 2));
+
+      expect(transactionBody).toHaveProperty('where');
+      if (!transactionBody.where) {
+        fail('transactionBody.where is not defined');
+      }
+      const whereStatement = transactionBody.where as Array<WhereStatement>;
+      expect(whereStatement[0]).toHaveProperty('id');
+    });
+
+    it('can accurately adjust data state when using upsert()', async () => {
+      const client = await new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: uuid(),
+        create: true,
+        defaultContext: {
+          ex: 'http://example.org/',
+        },
+      }).connect();
+      console.log('Connected');
+      await client
+        .transact({
+          insert: [
+            {
+              '@id': 'ex:freddy',
+              '@type': 'ex:Person',
+              name: 'Freddy',
+              age: 30,
+              favoriteNumbers: [1, 2, 3],
+              friends: [{ '@id': 'ex:alice' }, { '@id': 'ex:letty' }],
+            },
+            {
+              '@id': 'ex:alice',
+              '@type': 'ex:Person',
+              superHeroPower: 'flight',
+              age: 25,
+              friends: [{ '@id': 'ex:freddy' }, { '@id': 'ex:bob' }],
+            },
+            {
+              '@id': 'ex:bob',
+              '@type': 'ex:Person',
+              name: 'Bob',
+              age: 35,
+              friends: [{ '@id': 'ex:freddy' }, { '@id': 'ex:alice' }],
+            },
+            {
+              '@id': 'ex:letty',
+              '@type': 'ex:Person',
+              name: 'Leticia',
+              age: 35,
+            },
+          ],
+        })
+        .send();
+      console.log('Transacted');
+      const upsertTransaction = client.upsert([
+        {
+          '@id': 'ex:freddy',
+          name: 'Freddy the Yeti',
+          favoriteNumbers: [4, 5],
+          friends: [
+            {
+              '@id': 'ex:andrew',
+              '@type': 'ex:Person',
+              name: 'Andrew',
+              friends: [{ '@id': 'ex:freddy' }],
+            },
+            { '@id': 'ex:letty', name: 'Letty' },
+            { '@id': 'ex:bob' },
+          ],
+        },
+        {
+          '@id': 'ex:alice',
+          superHeroPower: 'mind reading',
+          friends: { '@id': 'ex:freddy' },
+        },
+      ]);
+
+      console.log(JSON.stringify(upsertTransaction.getTransaction(), null, 2));
+      const result = await upsertTransaction.send();
+      console.log('Upserted');
+      expect(result).toBeDefined();
+
+      const data = await client
+        .query({
+          select: { '?s': ['*'] },
+          where: {
+            '@id': '?s',
+            '@type': 'ex:Person',
+          },
+        })
+        .send();
+      console.log('Queried');
+      console.log(JSON.stringify(data, null, 2));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const freddy = data.find((item: any) => item['@id'] === 'ex:freddy');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const alice = data.find((item: any) => item['@id'] === 'ex:alice');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const bob = data.find((item: any) => item['@id'] === 'ex:bob');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const letty = data.find((item: any) => item['@id'] === 'ex:letty');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const andrew = data.find((item: any) => item['@id'] === 'ex:andrew');
+      expect(freddy).toBeDefined();
+      expect(alice).toBeDefined();
+      expect(bob).toBeDefined();
+      expect(letty).toBeDefined();
+      expect(andrew).toBeDefined();
+      expect(freddy.favoriteNumbers.includes(4)).toBeTruthy();
+      expect(freddy.favoriteNumbers.includes(5)).toBeTruthy();
+      expect(freddy.favoriteNumbers.includes(1)).toBeFalsy();
+      expect(letty.name).toEqual('Letty');
+      expect(andrew.name).toEqual('Andrew');
+      expect(bob.name).toEqual('Bob');
+      expect(andrew.friends['@id']).toEqual('ex:freddy');
+    });
+
+    it('can handle blank nodes correctly with upsert', async () => {
+      const client = await new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: uuid(),
+        create: true,
+      }).connect();
+
+      const upsertTxn = client.upsert({
+        '@id': 'andrew',
+        friends: [
+          {
+            '@id': 'alice',
+            name: 'alice',
+          },
+          { '@id': 'bob' },
+          { name: 'blank guy' },
+        ],
+      });
+
+      let error;
+      try {
+        await upsertTxn.send();
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeUndefined();
     });
   });
 
@@ -358,6 +599,17 @@ describe('FlureeClient', () => {
         fail('DID not defined');
       }
 
+      console.log(
+        client
+          .upsert([
+            { '@id': 'freddy', name: 'Freddy the Yeti' },
+            { '@id': 'alice', age: 25 },
+          ])
+          .getTransaction(),
+        null,
+        2
+      );
+
       await client
         .transact({
           '@context': {
@@ -395,6 +647,130 @@ describe('FlureeClient', () => {
               ],
               'f:property': [
                 {
+                  'f:path': {
+                    '@id': 'ex:secret',
+                  },
+                  'f:allow': [
+                    {
+                      '@id': 'ex:secretsRule',
+                      'f:targetRole': {
+                        '@id': 'ex:userRole',
+                      },
+                      'f:action': [
+                        {
+                          '@id': 'f:view',
+                        },
+                        {
+                          '@id': 'f:modify',
+                        },
+                      ],
+                      'f:equals': [
+                        {
+                          '@id': 'f:$identity',
+                        },
+                        {
+                          '@id': 'ex:user',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              '@id': did,
+              'ex:user': {
+                '@id': 'ex:alice',
+              },
+              'f:role': {
+                '@id': 'ex:userRole',
+              },
+            },
+          ],
+        })
+        .send();
+
+      const signedTransaction = client
+        .transact({
+          insert: [
+            {
+              '@id': 'ex:alice',
+              'ex:secret': "alice's new secret",
+            },
+          ],
+        })
+        .sign();
+
+      let result, error;
+
+      try {
+        result = await signedTransaction.send();
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeUndefined();
+      expect(result).toBeDefined();
+    });
+
+    it('can also transact sign messages to a fluree-hosted ledger', async () => {
+      const client = await new FlureeClient({
+        isFlureeHosted: true,
+        ledger: process.env.TEST_NEXUS_LEDGER,
+        apiKey: process.env.TEST_API_KEY,
+        privateKey:
+          '509553eece84d5a410f1012e8e19e84e938f226aa3ad144e2d12f36df0f51c1e',
+      }).connect();
+
+      client.setContext({
+        f: 'https://ns.flur.ee/ledger#',
+        ex: 'http://example.org/',
+      });
+
+      const did = client.getDid();
+
+      if (!did) {
+        fail('DID not defined');
+      }
+
+      await client
+        .transact({
+          '@context': {
+            'f:equals': { '@container': '@list' },
+          },
+          insert: [
+            {
+              '@id': 'ex:alice',
+              '@type': 'ex:User',
+              'ex:secret': "alice's secret",
+            },
+            {
+              '@id': 'ex:bob',
+              '@type': 'ex:User',
+              'ex:secret': "bob's secret",
+            },
+            {
+              '@id': 'ex:userPolicy',
+              '@type': ['f:Policy'],
+              'f:targetClass': {
+                '@id': 'ex:User',
+              },
+              'f:allow': [
+                {
+                  '@id': 'ex:globalViewAllow',
+                  'f:targetRole': {
+                    '@id': 'ex:userRole',
+                  },
+                  'f:action': [
+                    {
+                      '@id': 'f:view',
+                    },
+                  ],
+                },
+              ],
+              'f:property': [
+                {
+                  '@id': 'ex:property1',
                   'f:path': {
                     '@id': 'ex:secret',
                   },
