@@ -1,7 +1,7 @@
 import { ContextStatement } from './ContextTypes';
 
 type InsertObject = {
-  [key: string]: string | string[] | number | number[] | InsertStatement;
+  [key: string]: string | string[] | number | number[] | boolean | boolean[] | InsertStatement;
 };
 
 export type InsertArray = Array<InsertObject>;
