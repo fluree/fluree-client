@@ -50,10 +50,9 @@ export class TransactionInstance {
    * const response = await transaction.send();
    */
   async send(): Promise<unknown> {
-    const transaction =
-      this.signedTransaction || JSON.stringify(this.transaction);
-    const [url, fetchOptions] = generateFetchParams(this.config, 'transact');
-    fetchOptions.body = transaction;
+    const contentType = this.signedTransaction ? "application/jwt" : "application/json";
+    const [url, fetchOptions] = generateFetchParams(this.config, 'transact', contentType);
+    fetchOptions.body = this.signedTransaction || JSON.stringify(this.transaction);
 
     return fetch(url, fetchOptions)
       .then((response) => {

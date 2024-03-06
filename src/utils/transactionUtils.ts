@@ -55,7 +55,12 @@ function processEntity(entity: Entity, map: EntityMap, idAlias: string): void {
   });
 }
 
-export function flattenTxn(
+
+export function flattenTxn(txn: InsertStatement, idAlias: string) {
+  return flattenEntity(txn as Entity, idAlias);
+}
+
+function flattenEntity(
   input: Entity | Entity[],
   idAlias: string
 ): EntityMap {

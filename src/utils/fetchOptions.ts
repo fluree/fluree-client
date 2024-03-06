@@ -2,7 +2,8 @@ import { IFlureeConfig } from '../interfaces/IFlureeConfig';
 
 export const generateFetchParams = (
   config: IFlureeConfig,
-  endpoint: string
+  endpoint: string,
+  contentType: string = "application/json"
 ): [
   string,
   {
@@ -27,7 +28,7 @@ export const generateFetchParams = (
   url += `/fluree/${endpoint}`;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const headers: any = {
-    'Content-Type': 'application/json',
+    'Content-Type': contentType,
   };
   if (apiKey) {
     headers['Authorization'] = `Bearer ${apiKey}`;
