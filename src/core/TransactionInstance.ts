@@ -50,7 +50,7 @@ export class TransactionInstance {
    * const response = await transaction.send();
    */
   async send(): Promise<unknown> {
-    const contentType = this.signedTransaction ? "application/jwt" : "application/json";
+    const contentType = (this.signedTransaction && this.config.isFlureeHosted) ? "application/jwt" : "application/json";
     const [url, fetchOptions] = generateFetchParams(this.config, 'transact', contentType);
     fetchOptions.body = this.signedTransaction || JSON.stringify(this.transaction);
 

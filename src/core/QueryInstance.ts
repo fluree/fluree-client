@@ -47,7 +47,7 @@ export class QueryInstance {
    * const response = await query.send();
    */
   async send() {
-    const contentType = this.signedQuery ? "application/jwt" : "application/json";
+    const contentType = (this.signedQuery && this.config.isFlureeHosted) ? "application/jwt" : "application/json";
     const [url, fetchOptions] = generateFetchParams(this.config, 'query', contentType);
     fetchOptions.body = this.signedQuery || JSON.stringify(this.query);
 

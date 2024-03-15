@@ -46,7 +46,7 @@ export class HistoryQueryInstance {
    * const response = await historyQuery.send();
    */
   async send() {
-    const contentType = this.signedQuery ? "application/jwt" : "application/json";
+    const contentType = (this.signedQuery && this.config.isFlureeHosted) ? "application/jwt" : "application/json";
     const [url, fetchOptions] = generateFetchParams(this.config, 'history', contentType);
     fetchOptions.body = this.signedQuery || JSON.stringify(this.query);
 
