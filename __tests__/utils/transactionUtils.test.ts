@@ -33,8 +33,6 @@ describe('transactionUtils', () => {
 
       const result = flattenTxn(txn, '@id');
 
-      console.log(JSON.stringify(result, null, 2));
-
       expect(result['ex:freddy']).toBeDefined();
       expect(result['ex:andrew']).toBeDefined();
       expect(result['ex:alice']).toBeDefined();
@@ -85,8 +83,6 @@ describe('transactionUtils', () => {
       };
 
       const result = convertTxnToWhereDelete(flattenedMap, '@id');
-
-      console.log(JSON.stringify(result, null, 2));
 
       const expectedWhereResult = [
         { '@id': 'ex:freddy', name: '?1' },

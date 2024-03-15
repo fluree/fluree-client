@@ -327,8 +327,6 @@ describe('FlureeClient', () => {
 
       const transactionBody = upsertTransaction.getTransaction();
 
-      console.log(JSON.stringify(transactionBody, null, 2));
-
       expect(transactionBody).toHaveProperty('where');
       if (!transactionBody.where) {
         fail('transactionBody.where is not defined');
@@ -347,7 +345,7 @@ describe('FlureeClient', () => {
           ex: 'http://example.org/',
         },
       }).connect();
-      console.log('Connected');
+
       await client
         .transact({
           insert: [
@@ -382,7 +380,7 @@ describe('FlureeClient', () => {
           ],
         })
         .send();
-      console.log('Transacted');
+
       const upsertTransaction = client.upsert([
         {
           '@id': 'ex:freddy',
@@ -406,9 +404,7 @@ describe('FlureeClient', () => {
         },
       ]);
 
-      console.log(JSON.stringify(upsertTransaction.getTransaction(), null, 2));
       const result = await upsertTransaction.send();
-      console.log('Upserted');
       expect(result).toBeDefined();
 
       const data = await client
@@ -420,8 +416,7 @@ describe('FlureeClient', () => {
           },
         })
         .send();
-      console.log('Queried');
-      console.log(JSON.stringify(data, null, 2));
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const freddy = data.find((item: any) => item['@id'] === 'ex:freddy');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -598,17 +593,6 @@ describe('FlureeClient', () => {
       if (!did) {
         fail('DID not defined');
       }
-
-      console.log(
-        client
-          .upsert([
-            { '@id': 'freddy', name: 'Freddy the Yeti' },
-            { '@id': 'alice', age: 25 },
-          ])
-          .getTransaction(),
-        null,
-        2
-      );
 
       await client
         .transact({
