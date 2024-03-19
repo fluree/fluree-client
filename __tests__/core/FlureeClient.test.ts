@@ -717,86 +717,90 @@ describe('FlureeClient', () => {
         fail('DID not defined');
       }
 
-      await client
-        .transact({
-          '@context': {
-            'f:equals': { '@container': '@list' },
-          },
-          insert: [
-            {
-              '@id': 'ex:alice',
-              '@type': 'ex:User',
-              'ex:secret': "alice's secret",
-            },
-            {
-              '@id': 'ex:bob',
-              '@type': 'ex:User',
-              'ex:secret': "bob's secret",
-            },
-            {
-              '@id': 'ex:userPolicy',
-              '@type': ['f:Policy'],
-              'f:targetClass': {
-                '@id': 'ex:User',
-              },
-              'f:allow': [
-                {
-                  '@id': 'ex:globalViewAllow',
-                  'f:targetRole': {
-                    '@id': 'ex:userRole',
-                  },
-                  'f:action': [
-                    {
-                      '@id': 'f:view',
-                    },
-                  ],
-                },
-              ],
-              'f:property': [
-                {
-                  '@id': 'ex:property1',
-                  'f:path': {
-                    '@id': 'ex:secret',
-                  },
-                  'f:allow': [
-                    {
-                      '@id': 'ex:secretsRule',
-                      'f:targetRole': {
-                        '@id': 'ex:userRole',
-                      },
-                      'f:action': [
-                        {
-                          '@id': 'f:view',
-                        },
-                        {
-                          '@id': 'f:modify',
-                        },
-                      ],
-                      'f:equals': [
-                        {
-                          '@id': 'f:$identity',
-                        },
-                        {
-                          '@id': 'ex:user',
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-            {
-              '@id': did,
-              'ex:user': {
-                '@id': 'ex:alice',
-              },
-              'f:role': {
-                '@id': 'ex:userRole',
-              },
-            },
-          ],
-        })
-        .send();
+      // data, policy, and identity are already stored in Fluree Hosted:
+      // https://data.flur.ee/jwhite/datasets/fluree-client-test ("fluree-jld/387028092978323")
+      
+      // TODO: uncomment this when Fluree Hosted can handle an upsert of Policy data (and don't forget to make this an upsert)
+      // await client
+      //   .transact({
+      //     '@context': {
+      //       'f:equals': { '@container': '@list' },
+      //     },
+      //     insert: [
+      //       {
+      //         '@id': 'ex:alice',
+      //         '@type': 'ex:User',
+      //         'ex:secret': "alice's secret",
+      //       },
+      //       {
+      //         '@id': 'ex:bob',
+      //         '@type': 'ex:User',
+      //         'ex:secret': "bob's secret",
+      //       },
+      //       {
+      //         '@id': 'ex:userPolicy',
+      //         '@type': ['f:Policy'],
+      //         'f:targetClass': {
+      //           '@id': 'ex:User',
+      //         },
+      //         'f:allow': [
+      //           {
+      //             '@id': 'ex:globalViewAllow',
+      //             'f:targetRole': {
+      //               '@id': 'ex:userRole',
+      //             },
+      //             'f:action': [
+      //               {
+      //                 '@id': 'f:view',
+      //               },
+      //             ],
+      //           },
+      //         ],
+      //         'f:property': [
+      //           {
+      //             '@id': 'ex:property1',
+      //             'f:path': {
+      //               '@id': 'ex:secret',
+      //             },
+      //             'f:allow': [
+      //               {
+      //                 '@id': 'ex:secretsRule',
+      //                 'f:targetRole': {
+      //                   '@id': 'ex:userRole',
+      //                 },
+      //                 'f:action': [
+      //                   {
+      //                     '@id': 'f:view',
+      //                   },
+      //                   {
+      //                     '@id': 'f:modify',
+      //                   },
+      //                 ],
+      //                 'f:equals': [
+      //                   {
+      //                     '@id': 'f:$identity',
+      //                   },
+      //                   {
+      //                     '@id': 'ex:user',
+      //                   },
+      //                 ],
+      //               },
+      //             ],
+      //           },
+      //         ],
+      //       },
+      //       {
+      //         '@id': did,
+      //         'ex:user': {
+      //           '@id': 'ex:alice',
+      //         },
+      //         'f:role': {
+      //           '@id': 'ex:userRole',
+      //         },
+      //       },
+      //     ],
+      //   })
+      //   .send();
 
       const signedTransaction = client
         .transact({
@@ -841,86 +845,90 @@ describe('FlureeClient', () => {
         fail('DID not defined');
       }
 
-      await client
-        .transact({
-          '@context': {
-            'f:equals': { '@container': '@list' },
-          },
-          insert: [
-            {
-              '@id': 'ex:freddy',
-              '@type': 'ex:Yeti',
-              'ex:yetiSecret': "freddy's secret",
-            },
-            {
-              '@id': 'ex:letty',
-              '@type': 'ex:Yeti',
-              'ex:yetiSecret': "letty's secret",
-            },
-            {
-              '@id': 'ex:yetiPolicy',
-              '@type': ['f:Policy'],
-              'f:targetClass': {
-                '@id': 'ex:Yeti',
-              },
-              'f:allow': [
-                {
-                  '@id': 'ex:globalViewAllowForYetis',
-                  'f:targetRole': {
-                    '@id': 'ex:yetiRole',
-                  },
-                  'f:action': [
-                    {
-                      '@id': 'f:view',
-                    },
-                  ],
-                },
-              ],
-              'f:property': [
-                {
-                  '@id': 'ex:property2',
-                  'f:path': {
-                    '@id': 'ex:yetiSecret',
-                  },
-                  'f:allow': [
-                    {
-                      '@id': 'ex:yetiSecretsRule',
-                      'f:targetRole': {
-                        '@id': 'ex:yetiRole',
-                      },
-                      'f:action': [
-                        {
-                          '@id': 'f:view',
-                        },
-                        {
-                          '@id': 'f:modify',
-                        },
-                      ],
-                      'f:equals': [
-                        {
-                          '@id': 'f:$identity',
-                        },
-                        {
-                          '@id': 'ex:yeti',
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-            {
-              '@id': did,
-              'ex:yeti': {
-                '@id': 'ex:freddy',
-              },
-              'f:role': {
-                '@id': 'ex:yetiRole',
-              },
-            },
-          ]
-        })
-        .send();
+      // data, policy, and identity are already stored in Fluree Hosted:
+      // https://data.flur.ee/jwhite/datasets/fluree-client-test ("fluree-jld/387028092978323")
+      
+      // TODO: uncomment this when Fluree Hosted can handle an upsert of Policy data (and don't forget to make this an upsert)
+      // await client
+      //   .transact({
+      //     '@context': {
+      //       'f:equals': { '@container': '@list' },
+      //     },
+      //     insert: [
+      //       {
+      //         '@id': 'ex:freddy',
+      //         '@type': 'ex:Yeti',
+      //         'ex:yetiSecret': "freddy's secret",
+      //       },
+      //       {
+      //         '@id': 'ex:letty',
+      //         '@type': 'ex:Yeti',
+      //         'ex:yetiSecret': "letty's secret",
+      //       },
+      //       {
+      //         '@id': 'ex:yetiPolicy',
+      //         '@type': ['f:Policy'],
+      //         'f:targetClass': {
+      //           '@id': 'ex:Yeti',
+      //         },
+      //         'f:allow': [
+      //           {
+      //             '@id': 'ex:globalViewAllowForYetis',
+      //             'f:targetRole': {
+      //               '@id': 'ex:yetiRole',
+      //             },
+      //             'f:action': [
+      //               {
+      //                 '@id': 'f:view',
+      //               },
+      //             ],
+      //           },
+      //         ],
+      //         'f:property': [
+      //           {
+      //             '@id': 'ex:property2',
+      //             'f:path': {
+      //               '@id': 'ex:yetiSecret',
+      //             },
+      //             'f:allow': [
+      //               {
+      //                 '@id': 'ex:yetiSecretsRule',
+      //                 'f:targetRole': {
+      //                   '@id': 'ex:yetiRole',
+      //                 },
+      //                 'f:action': [
+      //                   {
+      //                     '@id': 'f:view',
+      //                   },
+      //                   {
+      //                     '@id': 'f:modify',
+      //                   },
+      //                 ],
+      //                 'f:equals': [
+      //                   {
+      //                     '@id': 'f:$identity',
+      //                   },
+      //                   {
+      //                     '@id': 'ex:yeti',
+      //                   },
+      //                 ],
+      //               },
+      //             ],
+      //           },
+      //         ],
+      //       },
+      //       {
+      //         '@id': did,
+      //         'ex:yeti': {
+      //           '@id': 'ex:freddy',
+      //         },
+      //         'f:role': {
+      //           '@id': 'ex:yetiRole',
+      //         },
+      //       },
+      //     ]
+      //   })
+      //   .send();
 
       const signedQuery = client
         .query({
@@ -937,7 +945,6 @@ describe('FlureeClient', () => {
       try {
         result = await signedQuery.send();
       } catch (e) {
-        console.log(e);
         error = e;
       }
 
