@@ -56,14 +56,14 @@ export class TransactionInstance {
 
     return fetch(url, fetchOptions)
       .then((response) => {
-        // if (response.status > 201) {
-        //   throw new Error(response.statusText);
-        // }
+        if (response.status > 201) {
+          throw new FlureeError(response.statusText);
+        }
         return response.json();
       })
       .then((json) => {
         if (json.error) {
-          throw new Error(`${json.error}: ${json.message}`);
+          throw new FlureeError(`${json.error}: ${json.message}`);
         }
         return json;
       });

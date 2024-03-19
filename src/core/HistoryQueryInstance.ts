@@ -52,9 +52,9 @@ export class HistoryQueryInstance {
 
     return fetch(url, fetchOptions)
       .then((response) => {
-        // if (response.status > 201) {
-        //   throw new Error(response.statusText);
-        // }
+        if (response.status > 201) {
+          throw new FlureeError(response.statusText);
+        }
         return response.json();
       })
       .then((json) => {

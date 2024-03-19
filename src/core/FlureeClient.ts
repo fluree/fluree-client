@@ -334,12 +334,9 @@ export class FlureeClient {
         'You must connect before transacting. Try using .connect().transact() instead'
       );
     }
-    const transactionContext = transaction['@context'];
-    const idAlias = findIdAlias(
-      mergeContexts(this.config.defaultContext || {}, transactionContext || {})
-    );
+    const idAlias = findIdAlias(this.config.defaultContext || {});
     const resultTransaction = handleUpsert(transaction, idAlias);
-    resultTransaction.ledger = transaction.ledger || this.config.ledger;
+    resultTransaction.ledger = this.config.ledger;
     return new TransactionInstance(resultTransaction, this.config);
   }
 

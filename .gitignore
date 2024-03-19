@@ -5,3 +5,4 @@ data/
 dist/
 node_modules/
 scratch.txt
+.env.local

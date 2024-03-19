@@ -820,6 +820,132 @@ describe('FlureeClient', () => {
       expect(error).toBeUndefined();
       expect(result).toBeDefined();
     });
+
+    it('can also query with signed messages to a fluree-hosted ledger', async () => {
+      const client = await new FlureeClient({
+        isFlureeHosted: true,
+        ledger: process.env.TEST_NEXUS_LEDGER,
+        apiKey: process.env.TEST_API_KEY,
+        privateKey:
+          '509553eece84d5a410f1012e8e19e84e938f226aa3ad144e2d12f36df0f51c1e',
+      }).connect();
+
+      client.setContext({
+        f: 'https://ns.flur.ee/ledger#',
+        ex: 'http://example.org/',
+      });
+
+      const did = client.getDid();
+
+      if (!did) {
+        fail('DID not defined');
+      }
+
+      await client
+        .transact({
+          '@context': {
+            'f:equals': { '@container': '@list' },
+          },
+          insert: [
+            {
+              '@id': 'ex:freddy',
+              '@type': 'ex:Yeti',
+              'ex:yetiSecret': "freddy's secret",
+            },
+            {
+              '@id': 'ex:letty',
+              '@type': 'ex:Yeti',
+              'ex:yetiSecret': "letty's secret",
+            },
+            {
+              '@id': 'ex:yetiPolicy',
+              '@type': ['f:Policy'],
+              'f:targetClass': {
+                '@id': 'ex:Yeti',
+              },
+              'f:allow': [
+                {
+                  '@id': 'ex:globalViewAllowForYetis',
+                  'f:targetRole': {
+                    '@id': 'ex:yetiRole',
+                  },
+                  'f:action': [
+                    {
+                      '@id': 'f:view',
+                    },
+                  ],
+                },
+              ],
+              'f:property': [
+                {
+                  '@id': 'ex:property2',
+                  'f:path': {
+                    '@id': 'ex:yetiSecret',
+                  },
+                  'f:allow': [
+                    {
+                      '@id': 'ex:yetiSecretsRule',
+                      'f:targetRole': {
+                        '@id': 'ex:yetiRole',
+                      },
+                      'f:action': [
+                        {
+                          '@id': 'f:view',
+                        },
+                        {
+                          '@id': 'f:modify',
+                        },
+                      ],
+                      'f:equals': [
+                        {
+                          '@id': 'f:$identity',
+                        },
+                        {
+                          '@id': 'ex:yeti',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              '@id': did,
+              'ex:yeti': {
+                '@id': 'ex:freddy',
+              },
+              'f:role': {
+                '@id': 'ex:yetiRole',
+              },
+            },
+          ]
+        })
+        .send();
+
+      const signedQuery = client
+        .query({
+          "where": {
+            "@id": "?s",
+            "ex:yetiSecret": "?secret"
+          },
+          "select": "?secret"
+        })
+        .sign();
+
+      let result, error;
+
+      try {
+        result = await signedQuery.send();
+      } catch (e) {
+        console.log(e);
+        error = e;
+      }
+
+      expect(error).toBeUndefined();
+      expect(result).toBeDefined();
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe("freddy's secret");
+    });
   });
 
   describe('context', () => {
