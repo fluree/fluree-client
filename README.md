@@ -671,3 +671,18 @@ const response = await historyQuery.send();
 ```
 
 ```
+
+
+## Running tests
+Before running tests, you'll need a `.env.local` file in the root of the project.
+This file needs to contain the following:
+```
+TEST_NEXUS_LEDGER="fluree-jld/387028092978318"
+TEST_API_KEY="_DPu2OWxmJ-zRwnzNr8uL...5mfV1OsfOXcRmb35t02rp1gMxxSw"
+```
+
+### Run tests 
+In the root of the project, run:
+```
+yarn test
+```

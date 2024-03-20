@@ -50,21 +50,20 @@ export class TransactionInstance {
    * const response = await transaction.send();
    */
   async send(): Promise<unknown> {
-    const transaction =
-      this.signedTransaction || JSON.stringify(this.transaction);
-    const [url, fetchOptions] = generateFetchParams(this.config, 'transact');
-    fetchOptions.body = transaction;
+    const contentType = (this.signedTransaction && this.config.isFlureeHosted) ? "application/jwt" : "application/json";
+    const [url, fetchOptions] = generateFetchParams(this.config, 'transact', contentType);
+    fetchOptions.body = this.signedTransaction || JSON.stringify(this.transaction);
 
     return fetch(url, fetchOptions)
       .then((response) => {
-        // if (response.status > 201) {
-        //   throw new Error(response.statusText);
-        // }
+        if (response.status > 201) {
+          throw new FlureeError(response.statusText);
+        }
         return response.json();
       })
       .then((json) => {
         if (json.error) {
-          throw new Error(`${json.error}: ${json.message}`);
+          throw new FlureeError(`${json.error}: ${json.message}`);
         }
         return json;
       });

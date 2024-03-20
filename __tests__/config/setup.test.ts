@@ -24,5 +24,4 @@ module.exports = async () => {
   process.env.TEST_PRIVATE_KEY =
     'fef21a1f4b65618ed2e8f5b2f37a2d6a0c4f0f816e656910253e81b1078fffd6';
   process.env.TEST_DID = 'did:fluree:TeznBH6UYJGux54BcS8F2wTbyPACdki3p6s';
-  process.env.TEST_NEXUS_LEDGER = 'fluree-jld/387028092978173';
 };
