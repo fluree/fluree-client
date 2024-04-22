@@ -85,6 +85,7 @@ client.configure({
 - [create()](#create)
 - [query()](#query)
 - [transact()](#transact)
+- [delete()](#delete)
 - [upsert()](#upsert)
 - [history()](#history)
 - [generateKeyPair()](#generateKeyPair)
@@ -166,6 +167,39 @@ const transactionInstance = client.transact({
 const response = await transactionInstance.send();
 ```
 
+#### `delete()`
+
+The `delete()` method creates a new `TransactionInstance` for deleting subjects by `@id` in the Fluree database. The `TransactionInstance` can then be used to sign and send delete transactions to the Fluree instance.
+
+> Delete is not an API endpoint in Fluree. This method helps to transform a single or list of subject identifiers (@id) into a _where/delete_ transaction that deletes the subject(s) and all facts about the subject(s).
+
+```js
+// Existing data:
+// [
+//   { "@id": "freddy", "name": "Freddy" },
+//   { "@id": "alice", "name": "Alice" }
+// ]
+
+const txnInstance = client.delete(['freddy']);
+
+const txnObject = txnInstance.getTransaction();
+
+console.log(txnObject);
+
+//  {
+//     where: [{ '@id': 'freddy', ?p0: '?o0' }],
+//     delete: [{ '@id': 'freddy', ?p0: '?o0' }],
+//     ledger: ...
+//   }
+
+const response = await txnInstance.send();
+
+// New data state after txn:
+// [
+//   { "@id": "alice", "name": "Alice" }
+// ]
+```
+
 #### `upsert()`
 
 The `upsert()` method creates a new `TransactionInstance` for upserting with the Fluree database. The `TransactionInstance` can be used & re-used to build, sign, and send upsert transactions to the Fluree instance.
@@ -183,7 +217,7 @@ The `upsert()` method creates a new `TransactionInstance` for upserting with the
 //   { "@id": "alice", "name": "Alice" }
 // ]
 
-const txnInstance = await client.upsert([
+const txnInstance = client.upsert([
   { '@id': 'freddy', name: 'Freddy the Yeti' },
   { '@id': 'alice', age: 25 },
 ]);
