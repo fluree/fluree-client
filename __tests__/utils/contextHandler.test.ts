@@ -1,4 +1,4 @@
-import { mergeContexts } from '../../src/utils/contextHandler';
+import { mergeContexts, findIdAlias } from '../../src/utils/contextHandler';
 
 describe('contextHandler', () => {
   it('can merge complex contexts', () => {
@@ -90,5 +90,20 @@ describe('contextHandler', () => {
       'https://example.com/',
     ]);
     expect(result3).toEqual({ ex: 'https://example.com/' });
+  });
+});
+
+describe('findIdAlias', () => {
+  it('can default to @id when an empty defaultContext is supplied', () => {
+    const idAlias = findIdAlias({});
+    expect(idAlias).toEqual("@id");
+  });
+  it('can return the correct alias when a defaultContext is supplied', () => {
+    const idAlias = findIdAlias({"ex": "example.org", "id": "@id", "schema": "http://schema.org"});
+    expect(idAlias).toEqual("id");
+  });
+  it('can return the correct alias when an array of objects is supplied', () => {
+    const idAlias = findIdAlias(["http://schema.org", {"id": "@id", "ex": "example.org"}]);
+    expect(idAlias).toEqual("id");
   });
 });
