@@ -1,7 +1,8 @@
 import { FlureeClient } from '../../src';
 import { v4 as uuid } from 'uuid';
 import { TransactionInstance } from '../../src/core/TransactionInstance';
-import { WhereStatement } from '../../src/types/WhereTypes';
+import { WhereObject, WhereStatement } from '../../src/types/WhereTypes';
+import { DeleteObject } from '../../src/types/TransactionTypes';
 
 describe('FlureeClient', () => {
   describe('constructor', () => {
@@ -247,6 +248,140 @@ describe('FlureeClient', () => {
       }
 
       expect(error2).toBeDefined();
+    });
+
+    it('can translate delete(id: string) into transactionInstance', async () => {
+      const client = await new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: uuid(),
+        create: true,
+      }).connect();
+
+      const deleteTransaction = client.delete("ex:freddy");
+      const transactionBody = deleteTransaction.getTransaction();
+
+      expect(deleteTransaction).toBeInstanceOf(TransactionInstance);
+      expect(transactionBody).toHaveProperty('where');
+      expect(transactionBody.where).toHaveLength(1);
+      const whereStatement = transactionBody.where as Array<WhereObject>;
+      expect(whereStatement[0]).toHaveProperty('@id');
+      expect(whereStatement[0]['@id']).toEqual("ex:freddy");
+
+      expect(transactionBody).toHaveProperty('delete');
+      expect(transactionBody.delete).toHaveLength(1);
+      const deleteStatement = transactionBody.where as Array<DeleteObject>;
+      expect(deleteStatement[0]).toHaveProperty('@id');
+      expect(deleteStatement[0]['@id']).toBe("ex:freddy");
+    });
+
+    it('can translate delete(id: string[]) into transactionInstance', async () => {
+      const client = await new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: uuid(),
+        create: true,
+      }).connect();
+
+      const deleteTransaction = client.delete(["ex:freddy", "ex:letty"]);
+      const transactionBody = deleteTransaction.getTransaction();
+
+      expect(deleteTransaction).toBeInstanceOf(TransactionInstance);
+      expect(transactionBody).toHaveProperty('where');
+      expect(transactionBody.where).toHaveLength(2);
+      expect(transactionBody).toHaveProperty('delete');
+      expect(transactionBody.delete).toHaveLength(2);
+    });
+
+    it('can translate delete() into transactionInstances with custom idAlias', async () => {
+      const client = await new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: uuid(),
+        create: true,
+        defaultContext: [
+          'https://ns.flur.ee/',
+          {
+            id: '@id',
+          },
+        ],
+      }).connect();
+
+      const deleteTransaction = client.delete(["ex:freddy", "ex:letty"]);
+      const transactionBody = deleteTransaction.getTransaction();
+
+      expect(transactionBody).toHaveProperty('where');
+      const whereStatement = transactionBody.where as Array<WhereStatement>;
+      expect(whereStatement[0]).toHaveProperty('id');
+    });
+
+    it('can effectively retract subjects from ledger when using delete()', async () => {
+      const client = await new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: uuid(),
+        create: true,
+        defaultContext: {
+          id: "@id",
+          ex: 'http://example.org/',
+        },
+      }).connect();
+
+      await client
+        .transact({
+          insert: [
+            {
+              id: 'ex:freddy',
+              '@type': 'ex:Yeti',
+              name: 'Freddy',
+              friends: [{ id: 'ex:alice' }, { id: 'ex:letty' }],
+            },
+            {
+              id: 'ex:alice',
+              '@type': 'ex:Yeti',
+              superHeroPower: 'flight',
+              age: 25,
+              friends: [{ id: 'ex:freddy' }],
+            },
+            {
+              id: 'ex:letty',
+              '@type': 'ex:Yeti',
+              name: 'Leticia',
+              age: 35,
+            },
+          ],
+        })
+        .send();
+
+      const deleteTransaction = client.delete(["ex:alice", "ex:letty"]);
+
+      const result = await deleteTransaction.send();
+      expect(result).toBeDefined();
+
+      const data = await client
+        .query({
+          select: { '?s': ['*'] },
+          where: {
+            id: '?s',
+            '@type': 'ex:Yeti',
+          },
+        })
+        .send();
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const freddy = data.find((item: any) => item.id === 'ex:freddy');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const alice = data.find((item: any) => item.id === 'ex:alice');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const letty = data.find((item: any) => item.id === 'ex:letty');
+      expect(freddy).toBeDefined();
+      expect(alice).not.toBeDefined();
+      expect(letty).not.toBeDefined();
+      expect(freddy.friends).toHaveLength(2);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(freddy.friends.map((f: any) => f.id).includes("ex:letty")).toBeTruthy();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(freddy.friends.map((f: any) => f.id).includes("ex:alice")).toBeTruthy();
     });
 
     it('can translate upsert() into transactionInstances', async () => {

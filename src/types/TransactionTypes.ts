@@ -4,7 +4,7 @@ type InsertObject = {
 
 export type InsertArray = Array<InsertObject>;
 
-type DeleteObject = {
+export type DeleteObject = {
   [key: string]: string | DeleteStatement;
 };
 
