@@ -5,7 +5,7 @@ import { IFlureeTransaction } from '../interfaces/IFlureeTransaction';
 import { ContextStatement } from '../types/ContextTypes';
 import { UpsertStatement } from '../types/TransactionTypes';
 import { findIdAlias, mergeContexts } from '../utils/contextHandler';
-import { handleUpsert } from '../utils/transactionUtils';
+import { handleDelete, handleUpsert } from '../utils/transactionUtils';
 import { FlureeError } from './FlureeError';
 import { HistoryQueryInstance } from './HistoryQueryInstance';
 import { QueryInstance } from './QueryInstance';
@@ -336,6 +336,41 @@ export class FlureeClient {
     }
     const idAlias = findIdAlias(this.config.defaultContext || {});
     const resultTransaction = handleUpsert(transaction, idAlias);
+    resultTransaction.ledger = this.config.ledger;
+    return new TransactionInstance(resultTransaction, this.config);
+  }
+
+
+  /**
+   * Creates a new TransactionInstance for deleting subjects by @id in the Fluree database. The TransactionInstance can be used & re-used to build, sign, and send delete transactions to the Fluree instance.
+   *
+   * Delete is not an API endpoint in Fluree. This method helps to transform a single or list of subject identifiers (@id) into a where/delete transaction that deletes the subject and all facts about the subject.
+   *
+   * Delete assumes that all facts for the provided subjects should be retracted from the database.
+   * @param id string | string[] - The subject identifier or identifiers to retract from the Fluree instance
+   * @returns TransactionInstance
+   * @example
+   * // Existing data:
+   * // [
+   * //   { "@id": "freddy", "name": "Freddy" },
+   * //   { "@id": "alice", "name": "Alice" }
+   * // ]
+   *
+   * await client.delete("freddy").send();
+   *
+   * // New data state after txn:
+   * // [
+   * //   { "@id": "alice", "name": "Alice", "age": 25 }
+   * // ]
+   */
+  delete(id: string | string[]): TransactionInstance {
+    if (!this.connected) {
+      throw new FlureeError(
+        'You must connect before transacting. Try using .connect().transact() instead'
+      );
+    }
+    const idAlias = findIdAlias(this.config.defaultContext || {});
+    const resultTransaction = handleDelete(id, idAlias);
     resultTransaction.ledger = this.config.ledger;
     return new TransactionInstance(resultTransaction, this.config);
   }
