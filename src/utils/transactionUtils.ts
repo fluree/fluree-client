@@ -1,11 +1,7 @@
 /* eslint-disable jsdoc/require-jsdoc */
 import { IFlureeTransaction } from '../interfaces/IFlureeTransaction';
 import { DeleteStatement, InsertStatement } from '../types/TransactionTypes';
-import {
-  WhereArray,
-  WhereCondition,
-  WhereStatement,
-} from '../types/WhereTypes';
+import { WhereArray, WhereCondition } from '../types/WhereTypes';
 
 type Entity = {
   [key: string]:
@@ -55,15 +51,11 @@ function processEntity(entity: Entity, map: EntityMap, idAlias: string): void {
   });
 }
 
-
 export function flattenTxn(txn: InsertStatement, idAlias: string) {
   return flattenEntity(txn as Entity, idAlias);
 }
 
-function flattenEntity(
-  input: Entity | Entity[],
-  idAlias: string
-): EntityMap {
+function flattenEntity(input: Entity | Entity[], idAlias: string): EntityMap {
   const map: EntityMap = {};
   const txns = Array.isArray(input) ? input : [input];
   txns.forEach((txn) => processEntity(txn, map, idAlias));
@@ -78,19 +70,22 @@ function flattenEntity(
 export function convertTxnToWhereDelete(
   flattenedTxn: EntityMap,
   idAlias: string
-): WhereArray {
-  const where: WhereArray = [];
+): [WhereArray, DeleteStatement] {
+  const whereClause: WhereArray = [];
+  const deleteClause: DeleteStatement = [];
   let i = 1;
   for (const key in flattenedTxn) {
     const entity = flattenedTxn[key];
     const entityKeys = Object.keys(entity).filter((k) => k !== idAlias);
     const whereEntity: WhereCondition = { [idAlias]: key };
     entityKeys.forEach((k) => {
-      where.push({ ...whereEntity, [k]: `?${i}` });
+      const expression = { ...whereEntity, [k]: `?${i}` };
+      whereClause.push(['optional', expression]);
+      deleteClause.push(expression);
       i++;
     });
   }
-  return where;
+  return [whereClause, deleteClause];
 }
 
 export const handleUpsert = (
@@ -98,11 +93,14 @@ export const handleUpsert = (
   idAlias: string
 ): IFlureeTransaction => {
   const flattenedTxn = flattenTxn(upsertTxn, idAlias);
-  const whereDelete = convertTxnToWhereDelete(flattenedTxn, idAlias);
+  const [whereClause, deleteClause] = convertTxnToWhereDelete(
+    flattenedTxn,
+    idAlias
+  );
 
   return {
-    where: whereDelete as WhereStatement,
-    delete: whereDelete as DeleteStatement,
+    where: whereClause,
+    delete: deleteClause,
     insert: upsertTxn,
   };
 };

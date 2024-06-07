@@ -150,12 +150,14 @@ export class FlureeClient {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async #testLedgers(): Promise<any> {
-    return this.query({
+    const queryInstance = this.query({
       where: {
         '@id': '?s',
+        '?p': '?o',
       },
       selectOne: ['?s'],
-    }).send();
+    });
+    return queryInstance.send();
   }
 
   /**
@@ -220,7 +222,6 @@ export class FlureeClient {
       ledger: ledgerName || this.config.ledger,
       insert: { message: 'success' },
     });
-
     return fetch(url, {
       method: 'POST',
       body,

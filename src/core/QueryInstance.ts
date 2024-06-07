@@ -47,23 +47,41 @@ export class QueryInstance {
    * const response = await query.send();
    */
   async send() {
-    const contentType = (this.signedQuery && this.config.isFlureeHosted) ? "application/jwt" : "application/json";
-    const [url, fetchOptions] = generateFetchParams(this.config, 'query', contentType);
+    const contentType =
+      this.signedQuery && this.config.isFlureeHosted
+        ? 'application/jwt'
+        : 'application/json';
+    const [url, fetchOptions] = generateFetchParams(
+      this.config,
+      'query',
+      contentType
+    );
     fetchOptions.body = this.signedQuery || JSON.stringify(this.query);
 
-    return fetch(url, fetchOptions)
-      .then((response) => {
-        if (response.status > 201) {
-          throw new FlureeError(response.statusText);
-        }
-        return response.json();
-      })
-      .then((json) => {
-        if (json.error) {
-          throw new FlureeError(`${json.error}: ${json.message}`);
-        }
-        return json;
-      });
+    try {
+      const response = await fetch(url, fetchOptions);
+      const json = await response.json();
+
+      // Check for HTTP errors or application-specific errors in the JSON
+      if (response.status > 201 || json.error) {
+        throw new FlureeError(
+          `Send Query Error: ${
+            json.error ? json.error.message : response.statusText
+          }`,
+          response.status,
+          response.statusText,
+          json.error
+        );
+      }
+
+      return json;
+    } catch (error) {
+      if (error instanceof FlureeError) {
+        throw error; // Rethrow if it's already a FlureeError
+      }
+      // Wrap unknown errors in FlureeError
+      throw new FlureeError('Unexpected error sending query', 0, '', error);
+    }
   }
 
   /**

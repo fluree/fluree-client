@@ -42,6 +42,27 @@ describe('TransactionInstance', () => {
     expect(error).toBeDefined();
   });
 
+  it('throws error on invalid transaction on fluree-hosted', async () => {
+    const client = await new FlureeClient({
+      isFlureeHosted: true,
+      ledger: process.env.TEST_NEXUS_LEDGER,
+      apiKey: process.env.TEST_API_KEY,
+    }).connect();
+    let error;
+    try {
+      await client
+        .transact({
+          delete: {
+            '@id': '?s',
+          },
+        })
+        .send();
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toBeDefined();
+  });
+
   describe('signing', () => {
     it('can use sign() to sign a transaction', async () => {
       if (!process.env.TEST_PRIVATE_KEY) {
@@ -95,7 +116,6 @@ describe('TransactionInstance', () => {
         })
         .sign()
         .send();
-
       expect(response).toBeDefined();
     }, 20000);
 
