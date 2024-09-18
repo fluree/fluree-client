@@ -93,13 +93,11 @@ export function generateWhereDeleteForIds(
   idAlias: string
 ): WhereArray {
   const where: WhereArray = [];
-  let i = 1;
-  for (const id in ids) {
+  for (const index in ids) {
     where.push({
-      [idAlias]: id, 
-      [`?p${i}`]: `?o${i}`
+      [idAlias]: ids[index], 
+      [`?p${index}`]: `?o${index}`
     });
-    i++;
   }
   return where;
 }
