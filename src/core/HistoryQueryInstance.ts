@@ -2,7 +2,7 @@ import { createJWS } from '@fluree/crypto';
 import { IFlureeConfig } from '../interfaces/IFlureeConfig';
 import { IFlureeHistoryQuery } from '../interfaces/IFlureeHistoryQuery';
 import { generateFetchParams } from '../utils/fetchOptions';
-import { FlureeError } from './FlureeError';
+import { ApplicationError, HttpError } from './Error';
 
 /**
  * Class representing a history query instance.
@@ -27,8 +27,10 @@ export class HistoryQueryInstance {
   signedQuery = '';
   constructor(query: IFlureeHistoryQuery, config: IFlureeConfig) {
     if (!query.history && !query['commit-details']) {
-      throw new FlureeError(
-        'either the history or commit-details key is required'
+      throw new ApplicationError(
+        'either the history or commit-details key is required',
+        'SYNTAX_ERROR',
+        query,
       );
     }
     this.query = query;
@@ -46,20 +48,34 @@ export class HistoryQueryInstance {
    * const response = await historyQuery.send();
    */
   async send() {
-    const contentType = (this.signedQuery && this.config.isFlureeHosted) ? "application/jwt" : "application/json";
-    const [url, fetchOptions] = generateFetchParams(this.config, 'history', contentType);
+    const contentType = this.signedQuery
+      ? 'application/jwt'
+      : 'application/json';
+    const [url, fetchOptions] = generateFetchParams(
+      this.config,
+      'history',
+      contentType,
+    );
     fetchOptions.body = this.signedQuery || JSON.stringify(this.query);
 
     return fetch(url, fetchOptions)
       .then((response) => {
         if (response.status > 201) {
-          throw new FlureeError(response.statusText);
+          throw new HttpError(
+            'HTTP Error',
+            response.status,
+            response.statusText,
+          );
         }
         return response.json();
       })
       .then((json) => {
         if (json.error) {
-          throw new FlureeError(`${json.error}: ${json.message}`);
+          throw new ApplicationError(
+            json.message || 'Application Error',
+            json.error,
+            json,
+          );
         }
         return json;
       });
@@ -79,13 +95,14 @@ export class HistoryQueryInstance {
   sign(privateKey?: string): HistoryQueryInstance {
     const key = privateKey ?? this.config.privateKey;
     if (!key) {
-      throw new FlureeError(
-        'privateKey must be provided as either a function parameter or in the config'
+      throw new ApplicationError(
+        'privateKey must be provided as either a function parameter or in the config',
+        'PRIVATE_KEY',
+        null,
       );
     }
-    const signedHistoryQuery = JSON.stringify(
-      createJWS(JSON.stringify(this.query), key)
-    );
+    const signedHistoryQuery = createJWS(JSON.stringify(this.query), key);
+
     this.signedQuery = signedHistoryQuery;
     return this;
   }
@@ -116,7 +133,7 @@ export class HistoryQueryInstance {
    *  port: 8080,
    *  ledger: 'test/history-query',
    * }).connect();
-   * 
+   *
    * const historyQuery = client
    *  .history({
    *    'commit-details': true,

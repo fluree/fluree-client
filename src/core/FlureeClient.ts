@@ -6,7 +6,7 @@ import { ContextStatement } from '../types/ContextTypes';
 import { UpsertStatement } from '../types/TransactionTypes';
 import { findIdAlias, mergeContexts } from '../utils/contextHandler';
 import { handleUpsert } from '../utils/transactionUtils';
-import { FlureeError } from './FlureeError';
+import { ApplicationError } from './Error';
 import { HistoryQueryInstance } from './HistoryQueryInstance';
 import { QueryInstance } from './QueryInstance';
 import { TransactionInstance } from './TransactionInstance';
@@ -14,6 +14,7 @@ import {
   generateKeyPair,
   pubKeyFromPrivate,
   accountIdFromPublic,
+  createJWS,
 } from '@fluree/crypto';
 
 /**
@@ -67,44 +68,58 @@ export class FlureeClient {
     if (isConnecting) {
       if (isFlureeHosted) {
         if (create) {
-          throw new FlureeError(
-            'cannot create a ledger through the Fluree hosted service API'
+          throw new ApplicationError(
+            'cannot create a ledger through the Fluree hosted service API',
+            'CLIENT_ERROR',
+            null,
           );
         }
       } else {
         if (!host) {
-          throw new FlureeError(
-            'host is required on either FlureeClient or connect'
+          throw new ApplicationError(
+            'host is required on either FlureeClient or connect',
+            'CLIENT_ERROR',
+            null,
           );
         }
       }
       if (!ledger) {
-        throw new FlureeError(
-          'ledger is required on either FlureeClient or connect'
+        throw new ApplicationError(
+          'ledger is required on either FlureeClient or connect',
+          'CLIENT_ERROR',
+          null,
         );
       }
     }
 
     if (signMessages && !privateKey) {
-      throw new FlureeError('privateKey is required when signMessages is true');
+      throw new ApplicationError(
+        'privateKey is required when signMessages is true',
+        'CLIENT_ERROR',
+        null,
+      );
     }
 
     if (isFlureeHosted) {
       if (host) {
-        throw new FlureeError(
-          '"host" should not be set when using the Fluree hosted service'
+        throw new ApplicationError(
+          '"host" should not be set when using the Fluree hosted service',
+          'CLIENT_ERROR',
+          null,
         );
       }
 
       if (port) {
-        throw new FlureeError(
-          '"port" should not be set when using the Fluree hosted service'
+        throw new ApplicationError(
+          '"port" should not be set when using the Fluree hosted service',
+          'CLIENT_ERROR',
+          null,
         );
       }
 
       if (!apiKey && !privateKey) {
         console.warn(
-          'either an "apiKey" or a "privateKey" for signing messages is required when using the Fluree hosted service'
+          'either an "apiKey" or a "privateKey" for signing messages is required when using the Fluree hosted service',
         );
       }
     }
@@ -139,7 +154,7 @@ export class FlureeClient {
       if (this.config.defaultContext) {
         mergedConfig.defaultContext = mergeContexts(
           this.config.defaultContext,
-          config.defaultContext
+          config.defaultContext,
         );
       }
     }
@@ -150,12 +165,14 @@ export class FlureeClient {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async #testLedgers(): Promise<any> {
-    return this.query({
+    const queryInstance = this.query({
       where: {
         '@id': '?s',
+        '?p': '?o',
       },
       selectOne: ['?s'],
-    }).send();
+    });
+    return queryInstance.send();
   }
 
   /**
@@ -210,30 +227,40 @@ export class FlureeClient {
   }
 
   async #createLedger(ledgerName?: string): Promise<void> {
-    const { host, port } = this.config;
+    const { host, port, signMessages, privateKey } = this.config;
     let url = `http://${host}`;
     if (port) {
       url += `:${port}`;
     }
     url += '/fluree/create';
-    const body = JSON.stringify({
+    let body = JSON.stringify({
       ledger: ledgerName || this.config.ledger,
       insert: { message: 'success' },
     });
-
+    let headers = {
+      'Content-Type': 'application/json',
+    };
+    if (signMessages && privateKey) {
+      body = createJWS(body, privateKey);
+      headers = {
+        'Content-Type': 'application/jwt',
+      };
+    }
     return fetch(url, {
       method: 'POST',
       body,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     })
       .then((response) => {
         return response.json();
       })
       .then((json) => {
         if (json.error) {
-          throw new FlureeError(`${json.error}: ${json.message}`);
+          throw new ApplicationError(
+            json.message,
+            json.error || 'CLIENT_ERROR',
+            json,
+          );
         }
         return json;
       });
@@ -258,8 +285,10 @@ export class FlureeClient {
    */
   query(query: IFlureeQuery): QueryInstance {
     if (!this.connected) {
-      throw new FlureeError(
-        'You must connect before querying. Try using .connect().query() instead'
+      throw new ApplicationError(
+        'You must connect before querying. Try using .connect().query() instead',
+        'CLIENT_ERROR',
+        null,
       );
     }
     if (!query.from) {
@@ -287,8 +316,10 @@ export class FlureeClient {
    */
   transact(transaction: IFlureeTransaction): TransactionInstance {
     if (!this.connected) {
-      throw new FlureeError(
-        'You must connect before transacting. Try using .connect().transact() instead'
+      throw new ApplicationError(
+        'You must connect before transacting. Try using .connect().transact() instead',
+        'CLIENT_ERROR',
+        null,
       );
     }
     if (!transaction.ledger) {
@@ -330,8 +361,10 @@ export class FlureeClient {
    */
   upsert(transaction: UpsertStatement): TransactionInstance {
     if (!this.connected) {
-      throw new FlureeError(
-        'You must connect before transacting. Try using .connect().transact() instead'
+      throw new ApplicationError(
+        'You must connect before transacting. Try using .connect().transact() instead',
+        'CLIENT_ERROR',
+        null,
       );
     }
     const idAlias = findIdAlias(this.config.defaultContext || {});
@@ -360,8 +393,10 @@ export class FlureeClient {
    */
   history(query: IFlureeHistoryQuery): HistoryQueryInstance {
     if (!this.connected) {
-      throw new FlureeError(
-        'You must connect before querying history. Try using .connect().history() instead'
+      throw new ApplicationError(
+        'You must connect before querying history. Try using .connect().history() instead',
+        'CLIENT_ERROR',
+        null,
       );
     }
     if (!query.from) {
@@ -487,7 +522,7 @@ export class FlureeClient {
   // async insertDid(did?: string): Promise<void> {
   //   const didKey = did || this.config.did;
   //   if (!didKey) {
-  //     throw new FlureeError(
+  //     throw new ApplicationError(
   //       'did is required; try calling generateKeyPair() or passing a did string as a parameter'
   //     );
   //   }
