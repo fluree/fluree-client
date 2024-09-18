@@ -1,7 +1,7 @@
 import { FlureeClient } from '../../src';
-import { FlureeError } from '../../src/core/FlureeError';
 import { verifyJWS } from '@fluree/crypto';
 import { v4 as uuid } from 'uuid';
+import { ApplicationError, HttpError } from '../../src/core/Error';
 
 describe('QueryInstance', () => {
   it('throws error on invalid query', async () => {
@@ -22,7 +22,7 @@ describe('QueryInstance', () => {
       error = e;
     }
     expect(error).toBeDefined();
-    expect(error).toBeInstanceOf(FlureeError);
+    expect(error).toBeInstanceOf(HttpError);
     // if (error instanceof FlureeError) {
     //   expect(error.message).toMatch(/db\/invalid-query/);
     // }
@@ -104,14 +104,16 @@ describe('QueryInstance', () => {
       })
       .getSignedQuery();
 
-    const verificationResult = verifyJWS(JSON.parse(signedQuery));
+    const verificationResult = verifyJWS(signedQuery);
 
-    let pubkey, payload;
-
-    if (verificationResult && verificationResult.arr) {
-      payload = verificationResult.arr[1];
-      pubkey = verificationResult.arr[3];
+    if (!verificationResult) {
+      fail('Verification failed');
     }
+
+    const { payload, pubkey } = verificationResult as {
+      payload: string;
+      pubkey: string;
+    };
 
     const publicKey = client.getPublicKey();
 
@@ -174,7 +176,7 @@ describe('QueryInstance', () => {
       expect(queryInstance.query['@context']).toBeInstanceOf(Object);
       expect(queryInstance.query['@context']).toBeDefined();
       expect(JSON.stringify(queryInstance.query['@context'])).toBe(
-        JSON.stringify({ ex: 'http://example.org/' })
+        JSON.stringify({ ex: 'http://example.org/' }),
       );
 
       client.setContext({ ex: 'http://example.org/' });
@@ -189,7 +191,7 @@ describe('QueryInstance', () => {
       expect(queryInstance2.query['@context']).toBeInstanceOf(Object);
       expect(queryInstance2.query['@context']).toBeDefined();
       expect(JSON.stringify(queryInstance2.query['@context'])).toBe(
-        JSON.stringify({ ex: 'http://example.org/' })
+        JSON.stringify({ ex: 'http://example.org/' }),
       );
     });
   });

@@ -2,8 +2,8 @@ import { IFlureeConfig } from '../interfaces/IFlureeConfig';
 import { IFlureeQuery } from '../interfaces/IFlureeQuery';
 import { mergeContexts } from '../utils/contextHandler';
 import { generateFetchParams } from '../utils/fetchOptions';
-import { FlureeError } from './FlureeError';
 import { createJWS } from '@fluree/crypto';
+import { ApplicationError, HttpError } from './Error';
 
 /**
  * Class representing a query instance.
@@ -47,23 +47,46 @@ export class QueryInstance {
    * const response = await query.send();
    */
   async send() {
-    const contentType = (this.signedQuery && this.config.isFlureeHosted) ? "application/jwt" : "application/json";
-    const [url, fetchOptions] = generateFetchParams(this.config, 'query', contentType);
+    const contentType = this.signedQuery
+      ? 'application/jwt'
+      : 'application/json';
+    const [url, fetchOptions] = generateFetchParams(
+      this.config,
+      'query',
+      contentType,
+    );
     fetchOptions.body = this.signedQuery || JSON.stringify(this.query);
 
-    return fetch(url, fetchOptions)
-      .then((response) => {
-        if (response.status > 201) {
-          throw new FlureeError(response.statusText);
-        }
-        return response.json();
-      })
-      .then((json) => {
-        if (json.error) {
-          throw new FlureeError(`${json.error}: ${json.message}`);
-        }
-        return json;
-      });
+    try {
+      const response = await fetch(url, fetchOptions);
+      const json = await response.json();
+
+      // Check for HTTP errors or application-specific errors in the JSON
+      if (response.status > 201) {
+        throw new HttpError('HTTP Error', response.status, json);
+      }
+
+      if (json.error) {
+        throw new ApplicationError(
+          json.message || 'Application Error',
+          json.error,
+          json,
+        );
+      }
+
+      return json;
+    } catch (error) {
+      if (error instanceof HttpError) {
+        console.error(`HTTP Error: ${error.status}`);
+        console.error('Response Body: ', JSON.stringify(error.body, null, 2));
+      } else if (error instanceof ApplicationError) {
+        console.error(`Application Error: ${error.errorCode}`);
+        console.error('Details: ', JSON.stringify(error.details, null, 2));
+      } else {
+        console.error('Unexpected error: ', error);
+      }
+      throw error;
+    }
   }
 
   /**
@@ -80,13 +103,14 @@ export class QueryInstance {
   sign(privateKey?: string): QueryInstance {
     const key = privateKey || this.config.privateKey;
     if (!key) {
-      throw new FlureeError(
-        'privateKey must be provided in either the query or the config'
+      throw new ApplicationError(
+        'privateKey must be provided in either the query or the config',
+        'NO_PRIVATE_KEY',
+        null,
       );
     }
-    const signedQuery = JSON.stringify(
-      createJWS(JSON.stringify(this.query), key)
-    );
+    const signedQuery = createJWS(JSON.stringify(this.query), key);
+
     this.signedQuery = signedQuery;
     return this;
   }

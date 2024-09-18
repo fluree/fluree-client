@@ -1,7 +1,7 @@
 import { FlureeClient } from '../../src';
-import { FlureeError } from '../../src/core/FlureeError';
 import { verifyJWS } from '@fluree/crypto';
 import { v4 as uuid } from 'uuid';
+import { ApplicationError, HttpError } from '../../src/core/Error';
 
 describe('HistoryQueryInstance', () => {
   it('can send a history query', async () => {
@@ -38,10 +38,10 @@ describe('HistoryQueryInstance', () => {
       error = e;
     }
     expect(error).toBeDefined();
-    expect(error).toBeInstanceOf(FlureeError);
-    if (error instanceof FlureeError) {
+    expect(error).toBeInstanceOf(ApplicationError);
+    if (error instanceof ApplicationError) {
       expect(error.message).toBe(
-        'either the history or commit-details key is required'
+        'either the history or commit-details key is required',
       );
     }
   });
@@ -65,12 +65,11 @@ describe('HistoryQueryInstance', () => {
       error = e;
     }
     expect(error).toBeDefined();
-    expect(error).toBeInstanceOf(FlureeError);
+    expect(error).toBeInstanceOf(HttpError);
     // if (error instanceof FlureeError) {
     //   expect(error.message).toMatch(/db\/invalid-query/);
     // }
   });
-
 
   it('can use sign() to sign a history query', async () => {
     if (!process.env.TEST_PRIVATE_KEY) {
@@ -118,8 +117,8 @@ describe('HistoryQueryInstance', () => {
       .send();
     const response = await client
       .history({
-        "commit-details": true,
-        t: { at: 'latest' }
+        'commit-details': true,
+        t: { at: 'latest' },
       })
       .sign()
       .send();
@@ -146,18 +145,22 @@ describe('HistoryQueryInstance', () => {
     const signedQuery = client
       .history({
         history: 'andrew',
-        t: { at: 'latest' }
+        t: { at: 'latest' },
       })
       .getSignedQuery();
 
-    const verificationResult = verifyJWS(JSON.parse(signedQuery));
+    debugger;
 
-    let pubkey, payload;
+    const verificationResult = verifyJWS(signedQuery);
 
-    if (verificationResult && verificationResult.arr) {
-      payload = verificationResult.arr[1];
-      pubkey = verificationResult.arr[3];
+    if (!verificationResult) {
+      fail('Verification failed');
     }
+
+    const { payload, pubkey } = verificationResult as {
+      payload: string;
+      pubkey: string;
+    };
 
     const publicKey = client.getPublicKey();
 

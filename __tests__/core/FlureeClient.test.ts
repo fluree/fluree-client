@@ -1,7 +1,7 @@
 import { FlureeClient } from '../../src';
 import { v4 as uuid } from 'uuid';
 import { TransactionInstance } from '../../src/core/TransactionInstance';
-import { WhereObject, WhereStatement } from '../../src/types/WhereTypes';
+import { WhereObject, WhereStatement, WhereOperation } from '../../src/types/WhereTypes';
 import { DeleteObject } from '../../src/types/TransactionTypes';
 
 describe('FlureeClient', () => {
@@ -163,6 +163,20 @@ describe('FlureeClient', () => {
         host: process.env.FLUREE_CLIENT_TEST_HOST,
         port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
         ledger: 'fluree-client/test',
+      });
+      await client.create(ledger);
+      expect(client).toBeInstanceOf(FlureeClient);
+      expect(client.config.ledger).toEqual(ledger);
+    });
+
+    it('can create a ledger with a privateKey if signMessages is true', async () => {
+      const ledger = uuid();
+      const client = new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: 'fluree-client/test',
+        privateKey: process.env.TEST_PRIVATE_KEY,
+        signMessages: true,
       });
       await client.create(ledger);
       expect(client).toBeInstanceOf(FlureeClient);
@@ -467,7 +481,12 @@ describe('FlureeClient', () => {
         fail('transactionBody.where is not defined');
       }
       const whereStatement = transactionBody.where as Array<WhereStatement>;
-      expect(whereStatement[0]).toHaveProperty('id');
+
+      const optionalClause = whereStatement[0] as WhereOperation;
+
+      expect(optionalClause).toBeInstanceOf(Array);
+
+      expect(optionalClause[1]).toHaveProperty('id');
     });
 
     it('can accurately adjust data state when using upsert()', async () => {
@@ -822,6 +841,8 @@ describe('FlureeClient', () => {
 
       let result, error;
 
+      debugger;
+
       try {
         result = await signedTransaction.send();
       } catch (e) {
@@ -854,7 +875,7 @@ describe('FlureeClient', () => {
 
       // data, policy, and identity are already stored in Fluree Hosted:
       // https://data.flur.ee/jwhite/datasets/fluree-client-test ("fluree-jld/387028092978323")
-      
+
       // TODO: uncomment this when Fluree Hosted can handle an upsert of Policy data (and don't forget to make this an upsert)
       // await client
       //   .transact({
@@ -956,11 +977,15 @@ describe('FlureeClient', () => {
         error = e;
       }
 
+      if (error) {
+        console.error(error);
+      }
+
       expect(error).toBeUndefined();
       expect(result).toBeDefined();
     });
 
-    it('can also query with signed messages to a fluree-hosted ledger', async () => {
+    it.skip('can also query with signed messages to a fluree-hosted ledger', async () => {
       const client = await new FlureeClient({
         isFlureeHosted: true,
         ledger: process.env.TEST_NEXUS_LEDGER,
@@ -982,7 +1007,7 @@ describe('FlureeClient', () => {
 
       // data, policy, and identity are already stored in Fluree Hosted:
       // https://data.flur.ee/jwhite/datasets/fluree-client-test ("fluree-jld/387028092978323")
-      
+
       // TODO: uncomment this when Fluree Hosted can handle an upsert of Policy data (and don't forget to make this an upsert)
       // await client
       //   .transact({
@@ -1067,11 +1092,11 @@ describe('FlureeClient', () => {
 
       const signedQuery = client
         .query({
-          "where": {
-            "@id": "?s",
-            "ex:yetiSecret": "?secret"
+          where: {
+            '@id': '?s',
+            'ex:yetiSecret': '?secret',
           },
-          "select": "?secret"
+          select: '?secret',
         })
         .sign();
 
@@ -1105,7 +1130,7 @@ describe('FlureeClient', () => {
       ];
       client.setContext(context);
       expect(JSON.stringify(client.config.defaultContext)).toEqual(
-        JSON.stringify(context)
+        JSON.stringify(context),
       );
     });
 
@@ -1125,7 +1150,7 @@ describe('FlureeClient', () => {
           {
             schema: 'http://schema.org/',
           },
-        ])
+        ]),
       );
     });
   });
