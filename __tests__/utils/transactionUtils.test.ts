@@ -82,20 +82,20 @@ describe('transactionUtils', () => {
         },
       };
 
-      const result = convertTxnToWhereDelete(flattenedMap, '@id');
+      const [whereResult] = convertTxnToWhereDelete(flattenedMap, '@id');
 
       const expectedWhereResult = [
-        { '@id': 'ex:freddy', name: '?1' },
-        { '@id': 'ex:freddy', favoriteNumbers: '?2' },
-        { '@id': 'ex:freddy', friends: '?3' },
-        { '@id': 'ex:andrew', name: '?4' },
-        { '@id': 'ex:andrew', friends: '?5' },
-        { '@id': 'ex:alice', superHeroPower: '?6' },
-        { '@id': 'ex:alice', friends: '?7' },
-        { '@id': 'ex:letty', name: '?8' },
+        ['optional', { '@id': 'ex:freddy', name: '?1' }],
+        ['optional', { '@id': 'ex:freddy', favoriteNumbers: '?2' }],
+        ['optional', { '@id': 'ex:freddy', friends: '?3' }],
+        ['optional', { '@id': 'ex:andrew', name: '?4' }],
+        ['optional', { '@id': 'ex:andrew', friends: '?5' }],
+        ['optional', { '@id': 'ex:alice', superHeroPower: '?6' }],
+        ['optional', { '@id': 'ex:alice', friends: '?7' }],
+        ['optional', { '@id': 'ex:letty', name: '?8' }],
       ];
 
-      expect(result).toEqual(expectedWhereResult);
+      expect(whereResult).toEqual(expectedWhereResult);
     });
   });
 });
