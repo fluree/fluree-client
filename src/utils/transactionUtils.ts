@@ -88,6 +88,22 @@ export function convertTxnToWhereDelete(
   return [whereClause, deleteClause];
 }
 
+export function generateWhereDeleteForIds(
+  ids: string[],
+  idAlias: string
+): WhereArray {
+  const where: WhereArray = [];
+  let i = 1;
+  for (const id in ids) {
+    where.push({
+      [idAlias]: id, 
+      [`?p${i}`]: `?o${i}`
+    });
+    i++;
+  }
+  return where;
+}
+
 export const handleUpsert = (
   upsertTxn: InsertStatement,
   idAlias: string
@@ -102,5 +118,19 @@ export const handleUpsert = (
     where: whereClause,
     delete: deleteClause,
     insert: upsertTxn,
+  };
+};
+
+export const handleDelete = (
+  id: string | string[],
+  idAlias: string
+): IFlureeTransaction => {
+  const idList = !Array.isArray(id) ? [id] : id;
+
+  const whereDelete = generateWhereDeleteForIds(idList, idAlias);
+
+  return {
+    where: whereDelete as WhereStatement,
+    delete: whereDelete as DeleteStatement
   };
 };
