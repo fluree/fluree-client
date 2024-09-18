@@ -6,7 +6,7 @@ import { ContextStatement } from '../types/ContextTypes';
 import { UpsertStatement } from '../types/TransactionTypes';
 import { findIdAlias, mergeContexts } from '../utils/contextHandler';
 import { handleDelete, handleUpsert } from '../utils/transactionUtils';
-import { ApplicationError } from './Error';
+import { ApplicationError, HttpError } from './Error';
 import { HistoryQueryInstance } from './HistoryQueryInstance';
 import { QueryInstance } from './QueryInstance';
 import { TransactionInstance } from './TransactionInstance';
@@ -246,24 +246,40 @@ export class FlureeClient {
         'Content-Type': 'application/jwt',
       };
     }
-    return fetch(url, {
-      method: 'POST',
-      body,
-      headers,
-    })
-      .then((response) => {
-        return response.json();
-      })
-      .then((json) => {
-        if (json.error) {
-          throw new ApplicationError(
-            json.message,
-            json.error || 'CLIENT_ERROR',
-            json,
-          );
-        }
-        return json;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        body,
+        headers,
       });
+      const json = await response.json();
+
+      if (response.status > 201) {
+        throw new HttpError('HTTP Error', response.status, json);
+      }
+
+      if (json.error) {
+        throw new ApplicationError(
+          json.message || 'Application Error',
+          json.error,
+          json,
+        );
+      }
+
+      return json;
+    } catch (error) {
+      if (error instanceof HttpError) {
+        console.error(`HTTP Error: ${error.status}`);
+        console.error('Response Body: ', JSON.stringify(error.body, null, 2));
+      } else if (error instanceof ApplicationError) {
+        console.error(`Application Error: ${error.errorCode}`);
+        console.error('Details: ', JSON.stringify(error.details, null, 2));
+      } else {
+        console.error('Unexpected error: ', error);
+      }
+      throw error;
+    }
   }
 
   /**
@@ -373,7 +389,6 @@ export class FlureeClient {
     return new TransactionInstance(resultTransaction, this.config);
   }
 
-
   /**
    * Creates a new TransactionInstance for deleting subjects by @id in the Fluree database. The TransactionInstance can be used & re-used to build, sign, and send delete transactions to the Fluree instance.
    *
@@ -398,8 +413,10 @@ export class FlureeClient {
    */
   delete(id: string | string[]): TransactionInstance {
     if (!this.connected) {
-      throw new FlureeError(
-        'You must connect before transacting. Try using .connect().transact() instead'
+      throw new ApplicationError(
+        'You must connect before transacting. Try using .connect().transact() instead',
+        'CLIENT_ERROR',
+        null,
       );
     }
     const idAlias = findIdAlias(this.config.defaultContext || {});

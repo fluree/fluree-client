@@ -1,7 +1,7 @@
 import { FlureeClient } from '../../src';
 import { verifyJWS } from '@fluree/crypto';
 import { v4 as uuid } from 'uuid';
-import { ApplicationError, HttpError } from '../../src/core/Error';
+import { HttpError } from '../../src/core/Error';
 
 describe('QueryInstance', () => {
   it('throws error on invalid query', async () => {

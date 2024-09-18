@@ -1,7 +1,11 @@
 /* eslint-disable jsdoc/require-jsdoc */
 import { IFlureeTransaction } from '../interfaces/IFlureeTransaction';
 import { DeleteStatement, InsertStatement } from '../types/TransactionTypes';
-import { WhereArray, WhereCondition } from '../types/WhereTypes';
+import {
+  WhereArray,
+  WhereCondition,
+  WhereStatement,
+} from '../types/WhereTypes';
 
 type Entity = {
   [key: string]:
@@ -69,7 +73,7 @@ function flattenEntity(input: Entity | Entity[], idAlias: string): EntityMap {
 
 export function convertTxnToWhereDelete(
   flattenedTxn: EntityMap,
-  idAlias: string
+  idAlias: string,
 ): [WhereArray, DeleteStatement] {
   const whereClause: WhereArray = [];
   const deleteClause: DeleteStatement = [];
@@ -90,13 +94,13 @@ export function convertTxnToWhereDelete(
 
 export function generateWhereDeleteForIds(
   ids: string[],
-  idAlias: string
+  idAlias: string,
 ): WhereArray {
   const where: WhereArray = [];
   for (const index in ids) {
     where.push({
-      [idAlias]: ids[index], 
-      [`?p${index}`]: `?o${index}`
+      [idAlias]: ids[index],
+      [`?p${index}`]: `?o${index}`,
     });
   }
   return where;
@@ -104,12 +108,12 @@ export function generateWhereDeleteForIds(
 
 export const handleUpsert = (
   upsertTxn: InsertStatement,
-  idAlias: string
+  idAlias: string,
 ): IFlureeTransaction => {
   const flattenedTxn = flattenTxn(upsertTxn, idAlias);
   const [whereClause, deleteClause] = convertTxnToWhereDelete(
     flattenedTxn,
-    idAlias
+    idAlias,
   );
 
   return {
@@ -121,7 +125,7 @@ export const handleUpsert = (
 
 export const handleDelete = (
   id: string | string[],
-  idAlias: string
+  idAlias: string,
 ): IFlureeTransaction => {
   const idList = !Array.isArray(id) ? [id] : id;
 
@@ -129,6 +133,6 @@ export const handleDelete = (
 
   return {
     where: whereDelete as WhereStatement,
-    delete: whereDelete as DeleteStatement
+    delete: whereDelete as DeleteStatement,
   };
 };

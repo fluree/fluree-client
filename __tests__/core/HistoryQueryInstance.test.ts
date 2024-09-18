@@ -149,8 +149,6 @@ describe('HistoryQueryInstance', () => {
       })
       .getSignedQuery();
 
-    debugger;
-
     const verificationResult = verifyJWS(signedQuery);
 
     if (!verificationResult) {
