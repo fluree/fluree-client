@@ -187,6 +187,39 @@ describe('FlureeClient', () => {
       expect(client.config.ledger).toEqual(ledger);
     });
 
+    it('can optionally add a transaction to a create() call', async () => {
+      const ledger = uuid();
+      const client = new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: 'fluree-client/test',
+      });
+      await client.create(ledger, {
+        '@context': {
+          ex: 'http://example.org/',
+        },
+        insert: { '@id': 'ex:andrew', 'ex:name': 'Andrew' },
+      });
+      expect(client).toBeInstanceOf(FlureeClient);
+      expect(client.config.ledger).toEqual(ledger);
+      await client.connect();
+      const data = await client
+        .query({
+          '@context': {
+            ex: 'http://example.org/',
+          },
+          select: { '?s': ['*'] },
+          where: {
+            '@id': '?s',
+            'ex:name': 'Andrew',
+          },
+        })
+        .send();
+      expect(data).toBeDefined();
+      expect(data).toHaveLength(1);
+      expect(data[0]['@id']).toBe('ex:andrew');
+    });
+
     it('cannot create a ledger if isFlureeHosted is true', async () => {
       const ledger = uuid();
       let error;

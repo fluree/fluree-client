@@ -1,7 +1,10 @@
 import { IFlureeConfig } from '../interfaces/IFlureeConfig';
 import { IFlureeHistoryQuery } from '../interfaces/IFlureeHistoryQuery';
 import { IFlureeQuery } from '../interfaces/IFlureeQuery';
-import { IFlureeTransaction } from '../interfaces/IFlureeTransaction';
+import {
+  IFlureeCreateTransaction,
+  IFlureeTransaction,
+} from '../interfaces/IFlureeTransaction';
 import { ContextStatement } from '../types/ContextTypes';
 import { UpsertStatement } from '../types/TransactionTypes';
 import { findIdAlias, mergeContexts } from '../utils/contextHandler';
@@ -209,6 +212,7 @@ export class FlureeClient {
    *
    * The returned FlureeClient will be configured to use the new ledger.
    * @param ledger - The name of the ledger to create
+   * @param transaction - An optional transaction to include when creating the ledger
    * @returns Promise<FlureeClient>
    * @example
    * const client = new FlureeClient({
@@ -217,31 +221,44 @@ export class FlureeClient {
    *  ledger: 'fluree-client/client'
    * });
    *
-   * const createdClient = await client.create('new-ledger');
+   * const createdClient = await client.create('new-ledger', { insert: { message: 'success' } });
    * // createdClient.config.ledger === 'new-ledger'
    */
-  async create(ledger: string): Promise<FlureeClient> {
-    await this.#createLedger(ledger);
+  async create(
+    ledger: string,
+    transaction?: IFlureeCreateTransaction,
+  ): Promise<FlureeClient> {
+    await this.#createLedger(ledger, transaction);
     this.configure({ ledger });
     return this;
   }
 
-  async #createLedger(ledgerName?: string): Promise<void> {
+  async #createLedger(
+    ledgerName?: string,
+    transaction?: IFlureeCreateTransaction,
+  ): Promise<void> {
     const { host, port, signMessages, privateKey } = this.config;
     let url = `http://${host}`;
     if (port) {
       url += `:${port}`;
     }
     url += '/fluree/create';
-    let body = JSON.stringify({
+    let body: IFlureeTransaction = {
       ledger: ledgerName || this.config.ledger,
       insert: { message: 'success' },
-    });
+    };
+    if (transaction) {
+      body = {
+        ...body,
+        ...transaction,
+      };
+    }
     let headers = {
       'Content-Type': 'application/json',
     };
+    let finalBody = JSON.stringify(body);
     if (signMessages && privateKey) {
-      body = createJWS(body, privateKey);
+      finalBody = createJWS(finalBody, privateKey);
       headers = {
         'Content-Type': 'application/jwt',
       };
@@ -250,7 +267,7 @@ export class FlureeClient {
     try {
       const response = await fetch(url, {
         method: 'POST',
-        body,
+        body: finalBody,
         headers,
       });
       const json = await response.json();

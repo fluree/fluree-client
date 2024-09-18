@@ -11,3 +11,9 @@ export interface IFlureeTransaction {
   where?: WhereStatement;
   opts?: QueryOpts;
 }
+
+export interface IFlureeCreateTransaction {
+  ['@context']?: ContextStatement;
+  insert: InsertStatement;
+  opts?: QueryOpts;
+}
