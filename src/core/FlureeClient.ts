@@ -173,7 +173,8 @@ export class FlureeClient {
         '@id': '?s',
         '?p': '?o',
       },
-      selectOne: ['?s'],
+      select: ['?s'],
+      limit: 1,
     });
     return queryInstance.send();
   }

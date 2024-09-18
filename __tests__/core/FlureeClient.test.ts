@@ -185,6 +185,12 @@ describe('FlureeClient', () => {
       await client.create(ledger);
       expect(client).toBeInstanceOf(FlureeClient);
       expect(client.config.ledger).toEqual(ledger);
+      try {
+        await client.connect();
+      } catch (e) {
+        console.error(e);
+        fail(e);
+      }
     });
 
     it('can optionally add a transaction to a create() call', async () => {
