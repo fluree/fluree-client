@@ -380,10 +380,10 @@
   resolved "https://registry.npmjs.org/@eslint/js/-/js-8.56.0.tgz"
   integrity sha512-gMsVel9D7f2HLkBma9VbtzZRehRogVRfbr++f06nL2vnCGCNlzOD+/MUov/F4p8myyAHspEhVobgjpX64q5m6A==
 
-"@fluree/crypto@^3.0.0-alpha1":
-  version "3.0.0-alpha1"
-  resolved "https://registry.npmjs.org/@fluree/crypto/-/crypto-3.0.0-alpha1.tgz"
-  integrity sha512-lpzwmtf0j1Fq2HqnhfnlAJW7AFEErUqKGvkGO5yfZpHTJBahIimKyEhsXp45Heg3VL12gQqP0aiX0k3JDpu7+g==
+"@fluree/crypto@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.npmjs.org/@fluree/crypto/-/crypto-3.0.0.tgz"
+  integrity sha512-6oTzKMtd7nMi0zzvIJFVR2C4MJ4gUbzCUDfHZzRM8AUhU5VV+YY9LYZUow7p8+e7COScjoDn6/ff52TeM4qzrQ==
   dependencies:
     "@cljs-oss/module-deps" "^1.1.1"
     "@fluree/sjcl" "^1.0.8-3"

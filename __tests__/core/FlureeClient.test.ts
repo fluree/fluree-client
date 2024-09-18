@@ -168,6 +168,20 @@ describe('FlureeClient', () => {
       expect(client.config.ledger).toEqual(ledger);
     });
 
+    it('can create a ledger with a privateKey if signMessages is true', async () => {
+      const ledger = uuid();
+      const client = new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: 'fluree-client/test',
+        privateKey: process.env.TEST_PRIVATE_KEY,
+        signMessages: true,
+      });
+      await client.create(ledger);
+      expect(client).toBeInstanceOf(FlureeClient);
+      expect(client.config.ledger).toEqual(ledger);
+    });
+
     it('cannot create a ledger if isFlureeHosted is true', async () => {
       const ledger = uuid();
       let error;
@@ -692,6 +706,8 @@ describe('FlureeClient', () => {
 
       let result, error;
 
+      debugger;
+
       try {
         result = await signedTransaction.send();
       } catch (e) {
@@ -702,7 +718,7 @@ describe('FlureeClient', () => {
       expect(result).toBeDefined();
     });
 
-    it.skip('can also transact sign messages to a fluree-hosted ledger', async () => {
+    it('can also transact sign messages to a fluree-hosted ledger', async () => {
       const client = await new FlureeClient({
         isFlureeHosted: true,
         ledger: process.env.TEST_NEXUS_LEDGER,
@@ -979,7 +995,7 @@ describe('FlureeClient', () => {
       ];
       client.setContext(context);
       expect(JSON.stringify(client.config.defaultContext)).toEqual(
-        JSON.stringify(context)
+        JSON.stringify(context),
       );
     });
 
@@ -999,7 +1015,7 @@ describe('FlureeClient', () => {
           {
             schema: 'http://schema.org/',
           },
-        ])
+        ]),
       );
     });
   });

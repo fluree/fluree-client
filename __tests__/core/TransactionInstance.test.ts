@@ -139,14 +139,16 @@ describe('TransactionInstance', () => {
         })
         .getSignedTransaction();
 
-      const verificationResult = verifyJWS(JSON.parse(signedTransaction));
+      const verificationResult = verifyJWS(signedTransaction);
 
-      let pubkey, payload;
-
-      if (verificationResult && verificationResult.arr) {
-        payload = verificationResult.arr[1];
-        pubkey = verificationResult.arr[3];
+      if (!verificationResult) {
+        fail('Verification failed');
       }
+
+      const { payload, pubkey } = verificationResult as {
+        payload: string;
+        pubkey: string;
+      };
 
       const publicKey = client.getPublicKey();
 
@@ -208,7 +210,7 @@ describe('TransactionInstance', () => {
       expect(transactionBody['@context']).toBeDefined();
 
       expect(JSON.stringify(transactionBody['@context'])).toBe(
-        JSON.stringify(mergeContexts(defaultContext, context))
+        JSON.stringify(mergeContexts(defaultContext, context)),
       );
     });
 
@@ -227,11 +229,11 @@ describe('TransactionInstance', () => {
       });
       expect(transactionInstance.getTransaction()).toBeDefined();
       expect(transactionInstance.getTransaction()['@context']).toBeInstanceOf(
-        Object
+        Object,
       );
       expect(transactionInstance.getTransaction()['@context']).toBeDefined();
       expect(
-        JSON.stringify(transactionInstance.getTransaction()['@context'])
+        JSON.stringify(transactionInstance.getTransaction()['@context']),
       ).toBe(JSON.stringify({ ex: 'http://example.org/' }));
 
       client.setContext('http://example.org/');
@@ -245,7 +247,7 @@ describe('TransactionInstance', () => {
       expect(transactionInstance2.getTransaction()).toBeDefined();
       expect(transactionInstance2.getTransaction()['@context']).toBeDefined();
       expect(
-        JSON.stringify(transactionInstance2.getTransaction()['@context'])
+        JSON.stringify(transactionInstance2.getTransaction()['@context']),
       ).toBe(JSON.stringify('http://example.org/'));
     });
   });
