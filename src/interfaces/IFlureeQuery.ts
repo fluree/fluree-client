@@ -1,9 +1,9 @@
-import { SelectArray, SelectStatement } from '../types/SelectTypes';
-import { WhereStatement } from '../types/WhereTypes';
-import { ContextStatement } from '../types/ContextTypes';
+import { SelectArray, SelectStatement } from "../types/SelectTypes";
+import { WhereStatement } from "../types/WhereTypes";
+import { ContextStatement } from "../types/ContextTypes";
 
 export interface SelectObject {
-  [key: string]: SelectArray;
+  [key: string]: SelectArray | SelectObject;
 }
 
 export interface QueryOpts {
@@ -20,7 +20,7 @@ export interface IFlureeQuery {
   from?: string | Array<string>;
   opts?: QueryOpts;
   t?: string;
-  ['@context']?: ContextStatement;
+  ["@context"]?: ContextStatement;
   groupBy?: string;
   orderBy?: string | Array<string>;
   having?: string | Array<string>;
