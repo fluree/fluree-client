@@ -2,6 +2,13 @@
 
 This is the official Fluree client SDK for TypeScript/JavaScript. It is a wrapper around the Fluree API, providing a more convenient way to interact with Fluree v3 databases.
 
+> Tested against the following `fluree/server` Docker Hub images:
+>
+> - `fluree/server:5839ffe273062b8da972b120deb54dd62e7c3d1f`: Current stable version
+> - `fluree/server:c452631c50b8f8e595d486240dab503bbaad6033`: October 30 2024
+> - `fluree/server:d5eb31b1c2be560a92a30176dc8b0e01973859ea`: October 22 2024
+> - `fluree/server:60829de035c4996369f7dbe0766b80db0e743a8b`: October 4 2024
+
 ## Installation
 
 ```bash
