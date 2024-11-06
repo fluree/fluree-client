@@ -2,8 +2,10 @@ import { IFlureeConfig } from '../interfaces/IFlureeConfig';
 import { IFlureeQuery } from '../interfaces/IFlureeQuery';
 import { mergeContexts } from '../utils/contextHandler';
 import { generateFetchParams } from '../utils/fetchOptions';
-import { createJWS } from '@fluree/crypto';
+import flureeCrypto from '@fluree/crypto';
+const { createJWS } = flureeCrypto;
 import { ApplicationError, HttpError } from './Error';
+import fetch from 'cross-fetch';
 
 /**
  * Class representing a query instance.
@@ -114,11 +116,6 @@ export class QueryInstance {
     this.signedQuery = signedQuery;
     return this;
   }
-
-  // setTime(time: string): QueryInstance {
-  //   this.query.t = time;
-  //   return this;
-  // }
 
   /**
    * Returns the signed query as a JWS string (if the query has been signed)

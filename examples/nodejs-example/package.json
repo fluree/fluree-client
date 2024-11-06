@@ -1,0 +1,12 @@
+{
+  "name": "fluree-nodejs-example",
+  "version": "1.0.0",
+  "description": "Example of using @fluree/fluree-client in Node.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@fluree/fluree-client": "file:../.."
+  }
+}

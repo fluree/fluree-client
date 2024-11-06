@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.browser.json",
+  "compilerOptions": {
+    "types": ["jest", "jest-extended", "node"],
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "*": ["*"],
+      "src/*": ["src/*"]
+    },
+    "noEmit": true
+  },
+  "include": ["src/**/*", "__tests__/browser/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

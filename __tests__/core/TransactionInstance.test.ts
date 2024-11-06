@@ -1,5 +1,6 @@
 import { FlureeClient } from '../../src';
-import { verifyJWS } from '@fluree/crypto';
+import flureeCrypto from '@fluree/crypto';
+const { verifyJWS } = flureeCrypto;
 import { mergeContexts } from '../../src/utils/contextHandler';
 
 describe('TransactionInstance', () => {
@@ -91,19 +92,16 @@ describe('TransactionInstance', () => {
           insert: [
             {
               '@id': 'ex:rootPolicy',
-              '@type': ['f:Policy'],
-              'f:targetNode': { '@id': 'f:allNodes' },
-              'f:allow': [
-                {
-                  '@id': 'ex:rootAccessAllow',
-                  'f:targetRole': { '@id': 'ex:rootRole' },
-                  'f:action': [{ '@id': 'f:view' }, { '@id': 'f:modify' }],
-                },
-              ],
+              '@type': ['f:AccessPolicy', 'ex:RootPolicy'],
+              'f:action': [{ '@id': 'f:view' }, { '@id': 'f:modify' }],
+              'f:query': {
+                '@type': '@json',
+                '@value': {},
+              },
             },
             {
               '@id': did,
-              'f:role': { '@id': 'ex:rootRole' },
+              'f:policyClass': { '@id': 'ex:RootPolicy' },
             },
           ],
         })

@@ -1,4 +1,4 @@
-# Fluree Client SDK for TypeScript/JavaScript
+# @fluree/fluree-client
 
 This is the official Fluree client SDK for TypeScript/JavaScript. It is a wrapper around the Fluree API, providing a more convenient way to interact with Fluree v3 databases.
 
@@ -10,20 +10,48 @@ npm install @fluree/fluree-client
 
 ## Usage
 
-To use the Fluree client SDK, you need to import the `FlureeClient` class from the package and create a new instance of it. You can then use the instance to interact with a Fluree database.
+### Node.js
 
-```js
-import { FlureeClient } from '@fluree/fluree-client';
+```javascript
+const { FlureeClient } = require('@fluree/fluree-client');
 
-const client = new FlureeClient({
-  isFlureeHosted: true,
-  apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
+// Create and connect to a Fluree instance
+const client = await new FlureeClient({
+  host: 'localhost',
+  port: 8090,
+  ledger: 'example/ledger',
 }).connect();
 
-await client
+// Perform a query
+const result = await client
   .query({
-    select: { freddy: ['*'] },
+    select: { '?s': ['*'] },
+    where: {
+      '@id': '?s',
+    },
+  })
+  .send();
+```
+
+### ES Modules (Browser)
+
+```javascript
+import { FlureeClient } from '@fluree/fluree-client';
+
+// Create and connect to a Fluree instance
+const client = await new FlureeClient({
+  host: 'localhost',
+  port: 8090,
+  ledger: 'example/ledger',
+}).connect();
+
+// Perform a query
+const result = await client
+  .query({
+    select: { '?s': ['*'] },
+    where: {
+      '@id': '?s',
+    },
   })
   .send();
 ```
@@ -702,21 +730,52 @@ const historyQuery = client.history({
 const response = await historyQuery.send();
 ```
 
-```
-
-```
-
-
 ## Running tests
+
 Before running tests, you'll need a `.env.local` file in the root of the project.
 This file needs to contain the following:
+
 ```
 TEST_NEXUS_LEDGER="fluree-jld/387028092978318"
 TEST_API_KEY="_DPu2OWxmJ-zRwnzNr8uL...5mfV1OsfOXcRmb35t02rp1gMxxSw"
 ```
 
-### Run tests 
+### Run tests
+
 In the root of the project, run:
+
 ```
 yarn test
 ```
+
+## Examples
+
+The repository includes complete example projects demonstrating usage in both Node.js and browser environments.
+
+### Running the Node.js Example
+
+```bash
+# Navigate to the Node.js example directory
+cd examples/nodejs-example
+
+# Install dependencies (including local fluree-client)
+npm install
+
+# Run the example
+npm start
+```
+
+### Running the Browser Example
+
+```bash
+# Navigate to the browser example directory
+cd examples/browser-example
+
+# Install dependencies (including local fluree-client)
+npm install
+
+# Start the development server
+npm start
+```
+
+This will open your default browser to the example page. Click the "Run Query" button to execute the example operations.

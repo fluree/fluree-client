@@ -1,1 +1,3 @@
-export { FlureeClient } from './core/FlureeClient';
+import { FlureeClient } from './core/FlureeClient';
+export default FlureeClient;
+export { FlureeClient };

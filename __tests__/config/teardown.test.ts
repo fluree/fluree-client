@@ -1,12 +1,31 @@
 import { GenericContainer } from 'testcontainers';
+import fs from 'fs';
+import path from 'path';
 
-// eslint-disable-next-line jsdoc/require-jsdoc
+interface FlureeConfig {
+  images: Array<{
+    tag: string;
+    description: string;
+  }>;
+  defaultImage: string;
+  containerPort: number;
+  hostPort: number;
+}
+
+const configPath = path.join(__dirname, 'fluree-images.json');
+const flureeConfig: FlureeConfig = JSON.parse(
+  fs.readFileSync(configPath, 'utf8'),
+);
+
+function getFlureeImage(): string {
+  const envImage = process.env.FLUREE_TEST_IMAGE;
+  return envImage || flureeConfig.defaultImage;
+}
+
 async function getFlureeContainer(): Promise<GenericContainer> {
-  const container = await new GenericContainer(
-    // 'fluree/server:791ac62648fdf5d202e89f22f4e4b57711fdd061'
-    'fluree/server:latest',
-  )
-    .withExposedPorts(8090)
+  const imageTag = getFlureeImage();
+  const container = await new GenericContainer(`fluree/server:${imageTag}`)
+    .withExposedPorts(flureeConfig.containerPort)
     .withReuse();
   return container;
 }

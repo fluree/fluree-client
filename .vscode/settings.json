@@ -1,0 +1,7 @@
+{
+    "jest.disabledWorkspaceFolders": [
+        "node_modules",
+        "dist",
+        "__tests__/browser"
+    ]
+}

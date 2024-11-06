@@ -6,3 +6,8 @@ dist/
 node_modules/
 scratch.txt
 .env.local
+test-*/**
+examples/**/node_modules/
+examples/**/dist/
+examples/.DS_Store
+examples/**/.DS_Store

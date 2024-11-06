@@ -2,8 +2,10 @@ import { IFlureeConfig } from '../interfaces/IFlureeConfig';
 import { IFlureeTransaction } from '../interfaces/IFlureeTransaction';
 import { mergeContexts } from '../utils/contextHandler';
 import { generateFetchParams } from '../utils/fetchOptions';
-import { createJWS } from '@fluree/crypto';
+import flureeCrypto from '@fluree/crypto';
+const { createJWS } = flureeCrypto;
 import { ApplicationError, HttpError } from './Error';
+import fetch from 'cross-fetch';
 
 /**
  * Class representing a transaction instance.

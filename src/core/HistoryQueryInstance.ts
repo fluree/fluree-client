@@ -1,8 +1,10 @@
-import { createJWS } from '@fluree/crypto';
+import flureeCrypto from '@fluree/crypto';
+const { createJWS } = flureeCrypto;
 import { IFlureeConfig } from '../interfaces/IFlureeConfig';
 import { IFlureeHistoryQuery } from '../interfaces/IFlureeHistoryQuery';
 import { generateFetchParams } from '../utils/fetchOptions';
 import { ApplicationError, HttpError } from './Error';
+import fetch from 'cross-fetch';
 
 /**
  * Class representing a history query instance.
@@ -47,7 +49,7 @@ export class HistoryQueryInstance {
    * @example
    * const response = await historyQuery.send();
    */
-  async send() {
+  async send(): Promise<unknown> {
     const contentType = this.signedQuery
       ? 'application/jwt'
       : 'application/json';
@@ -59,7 +61,7 @@ export class HistoryQueryInstance {
     fetchOptions.body = this.signedQuery || JSON.stringify(this.query);
 
     return fetch(url, fetchOptions)
-      .then((response) => {
+      .then((response: Response) => {
         if (response.status > 201) {
           throw new HttpError(
             'HTTP Error',
@@ -69,7 +71,7 @@ export class HistoryQueryInstance {
         }
         return response.json();
       })
-      .then((json) => {
+      .then((json: { error?: string; message?: string }) => {
         if (json.error) {
           throw new ApplicationError(
             json.message || 'Application Error',
@@ -106,11 +108,6 @@ export class HistoryQueryInstance {
     this.signedQuery = signedHistoryQuery;
     return this;
   }
-
-  // setTime(time: string): QueryInstance {
-  //   this.query.t = time;
-  //   return this;
-  // }
 
   /**
    * Returns the signed history query as a JWS string (if the history query has been signed)

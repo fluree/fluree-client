@@ -13,12 +13,10 @@ import { ApplicationError, HttpError } from './Error';
 import { HistoryQueryInstance } from './HistoryQueryInstance';
 import { QueryInstance } from './QueryInstance';
 import { TransactionInstance } from './TransactionInstance';
-import {
-  generateKeyPair,
-  pubKeyFromPrivate,
-  accountIdFromPublic,
-  createJWS,
-} from '@fluree/crypto';
+import fetch from 'cross-fetch';
+import flureeCrypto from '@fluree/crypto';
+const { generateKeyPair, pubKeyFromPrivate, accountIdFromPublic, createJWS } =
+  flureeCrypto;
 
 /**
  * FlureeClient is the main class for interacting with FlureeDB

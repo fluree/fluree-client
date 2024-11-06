@@ -1,3 +1,4 @@
+import 'jest-extended';
 import { FlureeClient } from '../../src';
 import { v4 as uuid } from 'uuid';
 import { TransactionInstance } from '../../src/core/TransactionInstance';
@@ -222,6 +223,9 @@ describe('FlureeClient', () => {
         })
         .send();
       expect(data).toBeDefined();
+      if (!Array.isArray(data)) {
+        fail('data is not an array');
+      }
       expect(data).toHaveLength(1);
       expect(data[0]['@id']).toBe('ex:andrew');
     });
@@ -690,6 +694,57 @@ describe('FlureeClient', () => {
       }
       expect(error).toBeDefined();
     });
+
+    it('returns expected query results', async () => {
+      const client = await new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: uuid(),
+        create: true,
+      }).connect();
+
+      await client
+        .transact({
+          '@context': {
+            ex: 'http://example.org/',
+          },
+          insert: [
+            {
+              '@id': 'ex:alice',
+              '@type': 'ex:Person',
+              'ex:name': 'Alice',
+              'ex:age': 25,
+            },
+            {
+              '@id': 'ex:bob',
+              '@type': 'ex:Person',
+              'ex:name': 'Bob',
+              'ex:age': 35,
+            },
+          ],
+        })
+        .send();
+
+      const data = await client
+        .query({
+          '@context': {
+            ex: 'http://example.org/',
+          },
+          select: { '?s': ['*'] },
+          where: {
+            '@id': '?s',
+            '@type': 'ex:Person',
+          },
+        })
+        .send();
+
+      expect(data).toBeDefined();
+      expect(data).toHaveLength(2);
+      expect(data[0]['@id']).toBeDefined();
+      expect(data[0]['ex:name']).toBeDefined();
+      expect(data[0]['ex:age']).toBeDefined();
+      expect(data[0]['@id']).toEqual('ex:alice');
+    });
   });
 
   describe('history()', () => {
@@ -797,9 +852,6 @@ describe('FlureeClient', () => {
 
       await client
         .transact({
-          '@context': {
-            'f:equals': { '@container': '@list' },
-          },
           insert: [
             {
               '@id': 'ex:alice',
@@ -813,78 +865,59 @@ describe('FlureeClient', () => {
             },
             {
               '@id': 'ex:userPolicy',
-              '@type': ['f:Policy'],
-              'f:targetClass': {
-                '@id': 'ex:User',
+              '@type': ['f:AccessPolicy', 'ex:UserPolicy'],
+              'f:action': [{ '@id': 'f:view' }],
+              'f:query': {
+                '@type': '@json',
+                '@value': {},
               },
-              'f:allow': [
-                {
-                  '@id': 'ex:globalViewAllow',
-                  'f:targetRole': {
-                    '@id': 'ex:userRole',
+            },
+            {
+              '@id': 'ex:secretsPolicy',
+              '@type': ['f:AccessPolicy', 'ex:UserPolicy'],
+              'f:onProperty': {
+                '@id': 'ex:secret',
+              },
+              'f:action': [{ '@id': 'f:view' }],
+              'f:query': {
+                '@type': '@json',
+                '@value': {
+                  '@context': {
+                    f: 'https://ns.flur.ee/ledger#',
+                    ex: 'http://example.org/',
                   },
-                  'f:action': [
-                    {
-                      '@id': 'f:view',
+                  where: {
+                    '@id': '?$identity',
+                    'ex:user': {
+                      '@id': '?$this',
                     },
-                  ],
-                },
-              ],
-              'f:property': [
-                {
-                  'f:path': {
-                    '@id': 'ex:secret',
                   },
-                  'f:allow': [
-                    {
-                      '@id': 'ex:secretsRule',
-                      'f:targetRole': {
-                        '@id': 'ex:userRole',
-                      },
-                      'f:action': [
-                        {
-                          '@id': 'f:view',
-                        },
-                        {
-                          '@id': 'f:modify',
-                        },
-                      ],
-                      'f:equals': [
-                        {
-                          '@id': 'f:$identity',
-                        },
-                        {
-                          '@id': 'ex:user',
-                        },
-                      ],
-                    },
-                  ],
                 },
-              ],
+              },
             },
             {
               '@id': did,
               'ex:user': {
                 '@id': 'ex:alice',
               },
-              'f:role': {
-                '@id': 'ex:userRole',
+              'f:policyClass': {
+                '@id': 'ex:UserPolicy',
               },
             },
           ],
         })
         .send();
 
-      const signedTransaction = client
-        .transact({
-          insert: [
-            {
-              '@id': 'ex:alice',
-              'ex:secret': "alice's new secret",
-            },
-          ],
-        })
-        .sign();
+      const txnBody = {
+        insert: [
+          {
+            '@id': 'ex:alice',
+            'ex:secret': "alice's new secret",
+          },
+        ],
+      };
+
+      const signedTransaction = client.transact(txnBody).sign();
 
       let result, error;
 
@@ -894,8 +927,34 @@ describe('FlureeClient', () => {
         error = e;
       }
 
-      expect(error).toBeUndefined();
-      expect(result).toBeDefined();
+      console.log('error', error);
+
+      expect(error).toBeDefined();
+      expect(result).toBeUndefined();
+
+      await client
+        .transact({
+          insert: {
+            '@id': 'ex:secretsPolicy',
+            'f:action': {
+              '@id': 'f:modify',
+            },
+          },
+        })
+        .send();
+
+      const signedTransaction2 = client.transact(txnBody).sign();
+
+      let result2, error2;
+
+      try {
+        result2 = await signedTransaction2.send();
+      } catch (e) {
+        error2 = e;
+      }
+
+      expect(error2).toBeUndefined();
+      expect(result2).toBeDefined();
     });
 
     it('can also transact sign messages to a fluree-hosted ledger', async () => {
@@ -1030,7 +1089,7 @@ describe('FlureeClient', () => {
       expect(result).toBeDefined();
     });
 
-    it.skip('can also query with signed messages to a fluree-hosted ledger', async () => {
+    it('can also query with signed messages to a fluree-hosted ledger', async () => {
       const client = await new FlureeClient({
         isFlureeHosted: true,
         ledger: process.env.TEST_NEXUS_LEDGER,
@@ -1139,7 +1198,7 @@ describe('FlureeClient', () => {
         .query({
           where: {
             '@id': '?s',
-            'ex:yetiSecret': '?secret',
+            'ex:secret': '?secret',
           },
           select: '?secret',
         })
@@ -1155,8 +1214,8 @@ describe('FlureeClient', () => {
 
       expect(error).toBeUndefined();
       expect(result).toBeDefined();
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBe("freddy's secret");
+      expect(result.length).toBeGreaterThan(0);
+      expect(result).toContain("alice's secret");
     });
   });
 

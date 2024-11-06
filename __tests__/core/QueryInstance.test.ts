@@ -1,5 +1,6 @@
 import { FlureeClient } from '../../src';
-import { verifyJWS } from '@fluree/crypto';
+import flureeCrypto from '@fluree/crypto';
+const { verifyJWS } = flureeCrypto;
 import { v4 as uuid } from 'uuid';
 import { HttpError } from '../../src/core/Error';
 
