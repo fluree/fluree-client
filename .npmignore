@@ -1,0 +1,45 @@
+# Tests
+__tests__/
+*.test.ts
+jest.config.js
+karma.conf.*
+test.sh
+
+# Development configs
+.eslintrc.js
+tsconfig*.json
+webpack.config.js
+rollup.config.js
+
+# Documentation
+docs/
+
+# Examples
+examples/
+
+# Scripts
+scripts/
+
+# Docker
+Dockerfile
+
+# Git
+.git/
+.gitignore
+
+# Coverage
+coverage/
+
+# Development data
+crypto/
+data/
+
+# Editor
+.vscode/
+
+# Misc
+*.log
+.DS_Store
+
+# Source TypeScript files (since we'll publish the compiled JS)
+src/
