@@ -1,6 +1,6 @@
 {
   "name": "@fluree/fluree-client",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Fluree client library for Node.js and browser environments",
   "type": "module",
   "main": "./dist/nodejs/index.js",
@@ -34,8 +34,7 @@
     "test:watch": "jest --watch --silent=false",
     "generate-docs": "ts-readme",
     "prepare": "npm run build",
-    "prepublishOnly": "npm run test && npm run lint",
-    "postinstall": "chmod +x scripts/*.sh scripts/*.js"
+    "prepublishOnly": "npm run test && npm run lint"
   },
   "author": "",
   "license": "ISC",
