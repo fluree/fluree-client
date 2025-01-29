@@ -1,23 +1,27 @@
 {
   "images": [
     {
-      "tag": "5839ffe273062b8da972b120deb54dd62e7c3d1f",
+      "tag": "7ca39f4b5c5c31602b44873cc19d313d33a99382",
       "description": "Current stable version"
+    },
+    {
+      "tag": "hotfix-1ffefe432db25a3c8df29f1e01e79ab02abc86cf",
+      "description": "January 9 2025"
+    },
+    {
+      "tag": "1ffefe432db25a3c8df29f1e01e79ab02abc86cf",
+      "description": "December 5 2024"
+    },
+    {
+      "tag": "5839ffe273062b8da972b120deb54dd62e7c3d1f",
+      "description": "November 5 2024"
     },
     {
       "tag": "c452631c50b8f8e595d486240dab503bbaad6033",
       "description": "October 30 2024"
-    },
-    {
-      "tag": "d5eb31b1c2be560a92a30176dc8b0e01973859ea",
-      "description": "October 22 2024"
-    },
-    {
-      "tag": "60829de035c4996369f7dbe0766b80db0e743a8b",
-      "description": "October 4 2024"
     }
   ],
-  "defaultImage": "5839ffe273062b8da972b120deb54dd62e7c3d1f",
+  "defaultImage": "7ca39f4b5c5c31602b44873cc19d313d33a99382",
   "containerPort": 8090,
   "hostPort": 8095
 }
