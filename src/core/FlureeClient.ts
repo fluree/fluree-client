@@ -15,6 +15,7 @@ import { QueryInstance } from './QueryInstance';
 import { TransactionInstance } from './TransactionInstance';
 import fetch from 'cross-fetch';
 import flureeCrypto from '@fluree/crypto';
+import { getFlureeBaseUrlFromConfig } from '../utils/fetchOptions';
 const { generateKeyPair, pubKeyFromPrivate, accountIdFromPublic, createJWS } =
   flureeCrypto;
 
@@ -236,12 +237,9 @@ export class FlureeClient {
     ledgerName?: string,
     transaction?: IFlureeCreateTransaction,
   ): Promise<void> {
-    const { host, port, signMessages, privateKey } = this.config;
-    let url = `http://${host}`;
-    if (port) {
-      url += `:${port}`;
-    }
-    url += '/fluree/create';
+    const { signMessages, privateKey } = this.config;
+
+    const url = getFlureeBaseUrlFromConfig(this.config) + '/create';
     let body: IFlureeTransaction = {
       ledger: ledgerName || this.config.ledger,
       insert: { message: 'success' },
