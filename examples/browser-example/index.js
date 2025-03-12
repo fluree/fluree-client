@@ -1,3 +1,4 @@
+/* eslint-disable jsdoc/require-jsdoc */
 import FlureeClient from '@fluree/fluree-client';
 
 async function runQuery() {
@@ -6,9 +7,7 @@ async function runQuery() {
     const client = await new FlureeClient({
       host: 'localhost',
       port: 8090,
-      ledger: 'example/ledger',
-      create: true, // You'll want to remove this if you've already created the ledger
-    }).connect();
+    }).create('browser-example/ledger');
 
     client.setContext({
       f: 'https://ns.flur.ee/ledger#',

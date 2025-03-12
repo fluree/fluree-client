@@ -12,9 +12,7 @@ async function main() {
     const client = await new FlureeClient({
       host: 'localhost',
       port: 8090,
-      ledger: 'node-example/ledger',
-      create: true, // You'll want to remove this if you've already created
-    }).connect();
+    }).create('node-example/ledger');
 
     client.setContext({
       f: 'https://ns.flur.ee/ledger#',
@@ -24,6 +22,7 @@ async function main() {
     console.log('\nExecuting transaction...');
     const transactionResult = await client
       .transact({
+        ledger: 'node-example/ledger',
         insert: {
           '@id': 'jack',
           name: 'Jack',
@@ -39,6 +38,7 @@ async function main() {
     console.log('\nExecuting simple query...');
     const queryResult = await client
       .query({
+        from: 'node-example/ledger',
         select: { jack: ['*'] },
       })
       .send();
@@ -48,6 +48,7 @@ async function main() {
     console.log('\nExecuting history query...');
     const historyResult = await client
       .history({
+        from: 'node-example/ledger',
         'commit-details': true,
         t: { at: 'latest' },
       })
