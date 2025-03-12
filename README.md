@@ -4,10 +4,11 @@ This is the official Fluree client SDK for TypeScript/JavaScript. It is a wrappe
 
 > Tested against the following `fluree/server` Docker Hub images:
 >
-> - `fluree/server:5839ffe273062b8da972b120deb54dd62e7c3d1f`: Current stable version
+> - `fluree/server:0d411e4b2c4f1269dc538c65072fd479db9e2e64`: Current stable version / March 12 2025
+> - `fluree/server:7ca39f4b5c5c31602b44873cc19d313d33a99382`: January 22 2025
+> - `fluree/server:1ffefe432db25a3c8df29f1e01e79ab02abc86cf`: December 5 2024
+> - `fluree/server:5839ffe273062b8da972b120deb54dd62e7c3d1f`: November 5 2024
 > - `fluree/server:c452631c50b8f8e595d486240dab503bbaad6033`: October 30 2024
-> - `fluree/server:d5eb31b1c2be560a92a30176dc8b0e01973859ea`: October 22 2024
-> - `fluree/server:60829de035c4996369f7dbe0766b80db0e743a8b`: October 4 2024
 
 ## Installation
 
@@ -22,16 +23,16 @@ npm install @fluree/fluree-client
 ```javascript
 const { FlureeClient } = require('@fluree/fluree-client');
 
-// Create and connect to a Fluree instance
+// Create a new FlureeClient instance
 const client = await new FlureeClient({
   host: 'localhost',
   port: 8090,
-  ledger: 'example/ledger',
-}).connect();
+});
 
 // Perform a query
 const result = await client
   .query({
+    from: 'my/ledger',
     select: { '?s': ['*'] },
     where: {
       '@id': '?s',
@@ -45,16 +46,16 @@ const result = await client
 ```javascript
 import { FlureeClient } from '@fluree/fluree-client';
 
-// Create and connect to a Fluree instance
+// Create a new FlureeClient instance
 const client = await new FlureeClient({
   host: 'localhost',
   port: 8090,
-  ledger: 'example/ledger',
-}).connect();
+});
 
 // Perform a query
 const result = await client
   .query({
+    from: 'my/ledger',
     select: { '?s': ['*'] },
     where: {
       '@id': '?s',
@@ -114,6 +115,10 @@ client.configure({
 });
 ```
 
+> _*Note*_: As of version 1.2.0, the `FlureeClient` class does not _require_ configuring a value on `ledger`, nor does it require that the `connect()` method be called before generating and sending queries/transactions.
+>
+> If you wish to call `connect()`, it is an option that simply allows you to validate the existence of a ledger, or to easily create it if using the `create: true` configuration option.
+
 ### Methods
 
 - [connect()](#connect)
@@ -134,7 +139,7 @@ client.configure({
 
 #### `connect()`
 
-In order to use the FlureeClient instance, you must first connect to the Fluree instance. This will test the connection and (if `config.create === true`) create the ledger if it does not exist.
+It is optional but not required to call `connect()` after creating a new `FlureeClient` instance. If used, this will test the connection and (if `config.create === true`) create the ledger if it does not exist.
 
 It will also throw an error if the connection fails (e.g. invalid host, ledger does not exist, etc.)
 
@@ -144,6 +149,15 @@ const connectedClient = await new FlureeClient({
   apiKey: process.env.FLUREE_API_KEY,
   ledger: 'fluree-jld/387028092978173',
 }).connect();
+```
+
+You can optionally provide a `ledger` param to the `connect()` method to override the ledger in the client configuration (or to set it, if it had not previously been provided):
+
+```js
+const connectedClient = await new FlureeClient({
+  isFlureeHosted: true,
+  apiKey: process.env.FLUREE_API_KEY,
+}).connect('fluree-jld/387028092978173');
 ```
 
 #### `create()`
@@ -162,6 +176,19 @@ const client = new FlureeClient({
 const createdClient = await client.create('new-ledger');
 ```
 
+Optionally, you can provide a particular "initial commit" transaction to be used when creating the ledger:
+
+```js
+const client = new FlureeClient({
+  host: 'localhost',
+  port: 8080,
+});
+
+const createdClient = await client.create('new-ledger', {
+  insert: { '@id': 'freddy', name: 'Freddy' },
+});
+```
+
 #### `query()`
 
 The `query()` method creates a new `QueryInstance` for querying the Fluree database. The `QueryInstance` can be used & re-used to build, sign, and send queries to the Fluree instance.
@@ -172,10 +199,10 @@ The `query()` method creates a new `QueryInstance` for querying the Fluree datab
 const client = await new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
-}).connect();
+});
 
 const queryInstance = client.query({
+  from: 'test/query',
   select: { freddy: ['*'] },
 });
 
@@ -192,10 +219,10 @@ The `transact()` method creates a new `TransactionInstance` for transacting with
 const client = await new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
-}).connect();
+});
 
 const transactionInstance = client.transact({
+  ledger: 'test/transaction',
   insert: { '@id': 'freddy', name: 'Freddy' },
 });
 
@@ -205,6 +232,8 @@ const response = await transactionInstance.send();
 #### `delete()`
 
 The `delete()` method creates a new `TransactionInstance` for deleting subjects by `@id` in the Fluree database. The `TransactionInstance` can then be used to sign and send delete transactions to the Fluree instance.
+
+If your `flureeClient` instance does not have a `ledger` configured, or, if you would like to specify a different ledger for the delete transaction, you can provide a `ledger` parameter to the `delete()` method.
 
 > Delete is not an API endpoint in Fluree. This method helps to transform a single or list of subject identifiers (@id) into a _where/delete_ transaction that deletes the subject(s) and all facts about the subject(s).
 
@@ -238,6 +267,8 @@ const response = await txnInstance.send();
 #### `upsert()`
 
 The `upsert()` method creates a new `TransactionInstance` for upserting with the Fluree database. The `TransactionInstance` can be used & re-used to build, sign, and send upsert transactions to the Fluree instance.
+
+If your `flureeClient` instance does not have a `ledger` configured, or, if you would like to specify a different ledger for the upsert transaction, you can provide a `ledger` parameter to the `upsert()` method.
 
 > Upsert is not an API endpoint in Fluree. This method helps to transform an _upsert_ transaction into an _insert/where/delete_ transaction.
 >
@@ -293,10 +324,10 @@ The `history()` method creates a new `HistoryQueryInstance` for querying the his
 const client = await new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
-}).connect();
+});
 
 const historyQuery = client.history({
+  from: 'test/history',
   'commit-details': true,
   t: { at: 'latest' },
 });
@@ -312,7 +343,6 @@ Automatically generates a new key pair and adds it to the FlureeClient instance.
 const client = new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
 });
 
 client.generateKeyPair();
@@ -330,7 +360,6 @@ The public key and DID will be derived from the private key and added to the Flu
 const client = await new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
 }).connect();
 
 const privateKey = 'XXX...XXX';
@@ -351,7 +380,6 @@ The `getPrivateKey()` method returns the private key of the FlureeClient instanc
 const client = new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
 });
 
 client.generateKeyPair();
@@ -367,7 +395,6 @@ The `getPublicKey()` method returns the public key of the FlureeClient instance 
 const client = new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
 });
 
 client.generateKeyPair();
@@ -383,7 +410,6 @@ The `getDid()` method returns the DID of the FlureeClient instance (if one has b
 const client = new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
 });
 
 client.generateKeyPair();
@@ -401,7 +427,6 @@ Unlike `addToContext()`, which merges new context elements into any existing con
 const client = new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
   defaultContext: { schema: 'http://schema.org/' },
 });
 
@@ -420,7 +445,6 @@ If a default context already exists, the new context will be merged with the exi
 const client = new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
   defaultContext: { schema: 'http://schema.org/' },
 });
 
@@ -440,7 +464,6 @@ The `getContext()` method returns the default context for the FlureeClient insta
 const client = new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
   defaultContext: { schema: 'http://schema.org/' },
 });
 
@@ -457,10 +480,10 @@ The `QueryInstance` class is used to build, sign, and send queries to the Fluree
 const client = await new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
 }).connect();
 
 const queryInstance = client.query({
+  from: 'test/query',
   select: { freddy: ['*'] },
 });
 
@@ -484,10 +507,10 @@ The `send()` method sends the query to the Fluree instance and returns the respo
 const client = await new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
-}).connect();
+});
 
 const queryInstance = client.query({
+  from: 'test/query',
   select: { freddy: ['*'] },
 });
 
@@ -502,11 +525,11 @@ The `sign()` method signs the query with the private key of the FlureeClient ins
 const client = await new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
-}).connect();
+});
 
 let signedQueryInstance = client
   .query({
+    from: 'test/query',
     select: { freddy: ['*'] },
   })
   .sign('XXX...XXX');
@@ -517,6 +540,7 @@ client.generateKeyPair();
 
 signedQueryInstance = client
   .query({
+    from: 'test/query',
     select: { freddy: ['*'] },
   })
   .sign();
@@ -532,11 +556,11 @@ The `getQuery()` method returns the query object of the QueryInstance.
 const client = await new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
   defaultContext: { ex: 'http://example.org/' },
-}).connect();
+});
 
 const queryInstance = client.query({
+  from: 'test/query',
   select: { 'ex:freddy': ['*'] },
 });
 
@@ -545,7 +569,7 @@ const query = queryInstance.getQuery();
 console.log(query);
 // {
 //   "@context": { "ex": "http://example.org/" },
-//   from: 'fluree-client/client',
+//   from: 'test/query',
 //   select: { "ex:freddy": ['*'] }
 // }
 ```
@@ -558,12 +582,12 @@ The `getSignedQuery()` method returns the signed query of the QueryInstance in t
 const client = await new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
-}).connect();
+});
 
 client.generateKeyPair();
 
 const queryInstance = client.query({
+  from: 'fluree-client/client',
   select: { freddy: ['*'] },
 });
 
@@ -583,10 +607,10 @@ The `TransactionInstance` class is used to build, sign, and send transactions to
 const client = await new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
-}).connect();
+});
 
 const transaction = client.transact({
+  ledger: 'fluree-client/client',
   insert: { '@id': 'freddy', name: 'Freddy' },
 });
 
@@ -610,10 +634,10 @@ The `send()` method sends the transaction to the Fluree instance and returns the
 const client = await new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
-}).connect();
+});
 
 const transaction = client.transact({
+  ledger: 'fluree-client/client',
   insert: { '@id': 'freddy', name: 'Freddy' },
 });
 
@@ -628,11 +652,11 @@ The `sign()` method signs the transaction with the private key of the FlureeClie
 const client = await new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
-}).connect();
+});
 
 let signedTransaction = client
   .transact({
+    ledger: 'fluree-client/client',
     insert: { '@id': 'freddy', name: 'Freddy' },
   })
   .sign('XXX...XXX');
@@ -643,6 +667,7 @@ client.generateKeyPair();
 
 signedTransaction = client
   .transact({
+    ledger: 'fluree-client/client',
     insert: { '@id': 'freddy', name: 'Freddy' },
   })
   .sign();
@@ -658,10 +683,10 @@ The `getTransaction()` method returns the transaction object of the TransactionI
 const client = await new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
-}).connect();
+});
 
 const transaction = client.transact({
+  ledger: 'fluree-client/client',
   insert: { '@id': 'freddy', name: 'Freddy' },
 });
 
@@ -682,12 +707,12 @@ The `getSignedTransaction()` method returns the signed transaction of the Transa
 const client = await new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
-}).connect();
+});
 
 client.generateKeyPair();
 
 const transaction = client.transact({
+  ledger: 'fluree-client/client',
   insert: { '@id': 'freddy', name: 'Freddy' },
 });
 
@@ -707,10 +732,10 @@ The `HistoryQueryInstance` class is used to build, sign, and send history querie
 const client = await new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
-}).connect();
+});
 
 const historyQuery = client.history({
+  from: 'test/history',
   'commit-details': true,
   t: { at: 'latest' },
 });
@@ -726,10 +751,10 @@ The `send()` method sends the history query to the Fluree instance and returns t
 const client = await new FlureeClient({
   isFlureeHosted: true,
   apiKey: process.env.FLUREE_API_KEY,
-  ledger: 'fluree-jld/387028092978173',
-}).connect();
+});
 
 const historyQuery = client.history({
+  from: 'test/history',
   'commit-details': true,
   t: { at: 'latest' },
 });

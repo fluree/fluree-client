@@ -11,12 +11,12 @@ import fetch from 'cross-fetch';
  * @example
  * const client = await new FlureeClient({
  *  host: localhost,
- *  port: 8080,
- *  ledger: 'test/history-query',
- * }).connect();
+ *  port: 8080
+ * });
  *
  * const historyQuery = client
  *  .history({
+ *    from: 'test/history-query',
  *    'commit-details': true,
  *    t: { at: 'latest' },
  *   })

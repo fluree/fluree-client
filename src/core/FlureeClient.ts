@@ -34,9 +34,8 @@ const { generateKeyPair, pubKeyFromPrivate, accountIdFromPublic, createJWS } =
  * @example
  * const client = new FlureeClient({
  *   isFlureeHosted: true,
- *   apiKey: process.env.FLUREE_API_KEY,
- *   ledger: 'fluree-jld/387028092978173',
- * }).connect();
+ *   apiKey: process.env.FLUREE_API_KEY
+ * });
  *
  * await client.query({
  *  select: { "freddy": ["*"] }
@@ -60,7 +59,6 @@ export class FlureeClient {
     const {
       host,
       port,
-      ledger,
       signMessages,
       privateKey,
       isFlureeHosted,
@@ -84,13 +82,6 @@ export class FlureeClient {
             null,
           );
         }
-      }
-      if (!ledger) {
-        throw new ApplicationError(
-          'ledger is required on either FlureeClient or connect',
-          'CLIENT_ERROR',
-          null,
-        );
       }
     }
 
@@ -142,8 +133,7 @@ export class FlureeClient {
    * @returns FlureeClient
    * @example
    * const client = new FlureeClient({
-   *   isFlureeHosted: true,
-   *   ledger: 'fluree-jld/387028092978173',
+   *   isFlureeHosted: true
    * });
    *
    * const updatedClient = client.configure({
@@ -180,10 +170,12 @@ export class FlureeClient {
 
   /**
    * Connect to the Fluree instance. This will test the connection and create the ledger if it does not exist.
+   * This is now an optional method to validate a connection with a particular ledger.
    *
    * Will throw an error if the connection fails (e.g. invalid host, ledger does not exist, etc.)
    *
    * The FlureeClient must be connected before querying or transacting.
+   * @param ledgerName - The name of the ledger to connect to. If not provided, the ledger name from the configuration will be used.
    * @returns Promise<FlureeClient>
    * @example
    * const connectedClient = await new FlureeClient({
@@ -192,12 +184,15 @@ export class FlureeClient {
    *   ledger: 'fluree-jld/387028092978173',
    * }).connect();
    */
-  async connect(): Promise<FlureeClient> {
+  async connect(ledgerName?: string): Promise<FlureeClient> {
     this.#checkConfig(this.config, true);
     this.connected = true;
     try {
       if (this.config.create) {
-        await this.#createLedger();
+        await this.#createLedger(ledgerName);
+      }
+      if (ledgerName) {
+        this.config.ledger = ledgerName;
       }
       await this.#testLedgers();
     } catch (error) {
@@ -280,7 +275,7 @@ export class FlureeClient {
           json,
         );
       }
-
+      this.config.ledger = ledgerName || this.config.ledger;
       return json;
     } catch (error) {
       if (error instanceof HttpError) {
@@ -304,24 +299,25 @@ export class FlureeClient {
    * const client = await new FlureeClient({
    *   isFlureeHosted: true,
    *   apiKey: process.env.FLUREE_API_KEY,
-   *   ledger: 'fluree-jld/387028092978173',
-   * }).connect();
+   * });
    *
    * const queryInstance = client.query({
+   *  from: 'fluree-jld/387028092978173',
    *  select: { "freddy": ["*"] }
    * });
    *
    * const response = await queryInstance.send();
    */
   query(query: IFlureeQuery): QueryInstance {
-    if (!this.connected) {
+    const { from } = query;
+    if (!this.config.ledger && !from) {
       throw new ApplicationError(
-        'You must connect before querying. Try using .connect().query() instead',
+        'must either configure a ledger on FlureClient or provide a "from" in the query',
         'CLIENT_ERROR',
         null,
       );
     }
-    if (!query.from) {
+    if (!from) {
       query.from = this.config.ledger;
     }
     return new QueryInstance(query, this.config);
@@ -334,25 +330,26 @@ export class FlureeClient {
    * @example
    * const client = await new FlureeClient({
    *   isFlureeHosted: true,
-   *   apiKey: process.env.FLUREE_API_KEY,
-   *   ledger: 'fluree-jld/387028092978173',
-   * }).connect();
+   *   apiKey: process.env.FLUREE_API_KEY
+   * });
    *
    * const transaction = client.transact({
+   *  ledger: 'fluree-jld/387028092978173',
    *  insert: { "@id": "freddy", "name": "Freddy" }
    * });
    *
    * const response = await transaction.send();
    */
   transact(transaction: IFlureeTransaction): TransactionInstance {
-    if (!this.connected) {
+    const { ledger } = transaction;
+    if (!this.config.ledger && !ledger) {
       throw new ApplicationError(
-        'You must connect before transacting. Try using .connect().transact() instead',
+        'must either configure a ledger on FlureClient or provide a "ledger" in the transaction',
         'CLIENT_ERROR',
         null,
       );
     }
-    if (!transaction.ledger) {
+    if (!ledger) {
       transaction.ledger = this.config.ledger;
     }
     return new TransactionInstance(transaction, this.config);
@@ -367,6 +364,7 @@ export class FlureeClient {
    *
    * This means that facts in your transaction should be inserted (if new) and should replace existing facts (if they exist on those subjects & properties).
    * @param transaction {UpsertStatement} - The upsert transaction to send to the Fluree instance
+   * @param ledger - The ledger to use for the upsert transaction. If not provided, the ledger from the configuration will be used.
    * @returns TransactionInstance
    * @example
    * // Existing data:
@@ -389,17 +387,17 @@ export class FlureeClient {
    * // Note that if this had been an "insert" freddy would now have two names.
    * // Note also that if this had been handled by deleting/insert, alice might have lost her name.
    */
-  upsert(transaction: UpsertStatement): TransactionInstance {
-    if (!this.connected) {
+  upsert(transaction: UpsertStatement, ledger?: string): TransactionInstance {
+    if (!this.config.ledger && !ledger) {
       throw new ApplicationError(
-        'You must connect before transacting. Try using .connect().transact() instead',
+        'must either configure a ledger on FlureClient or provide a "ledger" in the transaction',
         'CLIENT_ERROR',
         null,
       );
     }
     const idAlias = findIdAlias(this.config.defaultContext || {});
     const resultTransaction = handleUpsert(transaction, idAlias);
-    resultTransaction.ledger = this.config.ledger;
+    resultTransaction.ledger = ledger || this.config.ledger;
     return new TransactionInstance(resultTransaction, this.config);
   }
 
@@ -410,6 +408,7 @@ export class FlureeClient {
    *
    * Delete assumes that all facts for the provided subjects should be retracted from the database.
    * @param id string | string[] - The subject identifier or identifiers to retract from the Fluree instance
+   * @param ledger - The ledger to use for the delete transaction. If not provided, the ledger from the configuration will be used.
    * @returns TransactionInstance
    * @example
    * // Existing data:
@@ -425,17 +424,17 @@ export class FlureeClient {
    * //   { "@id": "alice", "name": "Alice", "age": 25 }
    * // ]
    */
-  delete(id: string | string[]): TransactionInstance {
-    if (!this.connected) {
+  delete(id: string | string[], ledger?: string): TransactionInstance {
+    if (!this.config.ledger && !ledger) {
       throw new ApplicationError(
-        'You must connect before transacting. Try using .connect().transact() instead',
+        'must either configure a ledger on FlureClient or provide a "ledger" in the call to delete',
         'CLIENT_ERROR',
         null,
       );
     }
     const idAlias = findIdAlias(this.config.defaultContext || {});
     const resultTransaction = handleDelete(id, idAlias);
-    resultTransaction.ledger = this.config.ledger;
+    resultTransaction.ledger = ledger || this.config.ledger;
     return new TransactionInstance(resultTransaction, this.config);
   }
 
@@ -458,14 +457,15 @@ export class FlureeClient {
    * const response = await historyQuery.send();
    */
   history(query: IFlureeHistoryQuery): HistoryQueryInstance {
-    if (!this.connected) {
+    const { from } = query;
+    if (!this.config.ledger && !from) {
       throw new ApplicationError(
-        'You must connect before querying history. Try using .connect().history() instead',
+        'must either configure a ledger on FlureClient or provide a "from" in the history query',
         'CLIENT_ERROR',
         null,
       );
     }
-    if (!query.from) {
+    if (!from) {
       query.from = this.config.ledger;
     }
     return new HistoryQueryInstance(query, this.config);
@@ -482,14 +482,14 @@ export class FlureeClient {
    * @example
    * const client = await new FlureeClient({
    *   isFlureeHosted: true,
-   *   apiKey: process.env.FLUREE_API_KEY,
-   *   ledger: 'fluree-jld/387028092978173',
-   * }).connect();
+   *   apiKey: process.env.FLUREE_API_KEY
+   * });
    *
    * const privateKey = client.setKey('XXXXXXXX');
    *
    * const response = await client
    *  .query({
+   *    from: 'fluree-jld/387028092978173',
    *    select: { "freddy": ["*"] }
    *   })
    *  .sign()
@@ -509,8 +509,7 @@ export class FlureeClient {
    * @example
    * const client = new FlureeClient({
    *   isFlureeHosted: true,
-   *   apiKey: process.env.FLUREE_API_KEY,
-   *   ledger: 'fluree-jld/387028092978173',
+   *   apiKey: process.env.FLUREE_API_KEY
    * });
    *
    * client.generateKeyPair();
@@ -607,7 +606,6 @@ export class FlureeClient {
    * const client = new FlureeClient({
    *   isFlureeHosted: true,
    *   apiKey: process.env.FLUREE_API_KEY,
-   *   ledger: 'fluree-jld/387028092978173',
    *  defaultContext: { "schema": "http://schema.org/" }
    * });
    *
@@ -632,8 +630,7 @@ export class FlureeClient {
    * const client = new FlureeClient({
    *   isFlureeHosted: true,
    *   apiKey: process.env.FLUREE_API_KEY,
-   *   ledger: 'fluree-jld/387028092978173',
-   *  defaultContext: { "schema": "http://schema.org/" }
+   *   defaultContext: { "schema": "http://schema.org/" }
    * });
    *
    * client.addToContext({ "ex": "http://example.org/" });
@@ -660,8 +657,7 @@ export class FlureeClient {
    * const client = new FlureeClient({
    *   isFlureeHosted: true,
    *   apiKey: process.env.FLUREE_API_KEY,
-   *   ledger: 'fluree-jld/387028092978173',
-   *  defaultContext: { "schema": "http://schema.org/" }
+   *   defaultContext: { "schema": "http://schema.org/" }
    * });
    *
    * const context = client.getContext();

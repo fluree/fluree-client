@@ -1,8 +1,12 @@
 {
   "images": [
     {
+      "tag": "0d411e4b2c4f1269dc538c65072fd479db9e2e64",
+      "description": "Current stable version / March 12 2025"
+    },
+    {
       "tag": "7ca39f4b5c5c31602b44873cc19d313d33a99382",
-      "description": "Current stable version"
+      "description": "January 22 2025"
     },
     {
       "tag": "hotfix-1ffefe432db25a3c8df29f1e01e79ab02abc86cf",
@@ -21,7 +25,7 @@
       "description": "October 30 2024"
     }
   ],
-  "defaultImage": "7ca39f4b5c5c31602b44873cc19d313d33a99382",
+  "defaultImage": "0d411e4b2c4f1269dc538c65072fd479db9e2e64",
   "containerPort": 8090,
   "hostPort": 8095
 }

@@ -12,12 +12,12 @@ import fetch from 'cross-fetch';
  * @example
  * const client = await new FlureeClient({
  *  host: localhost,
- *  port: 8080,
- *  ledger: 'test/query',
- * }).connect();
+ *  port: 8080
+ * });
  *
  * const transaction = client
  *  .transact({
+ *   ledger: 'test/transaction',
  *   insert: { "@id": "freddy", "name": "Freddy" }
  *  })
  *
@@ -141,7 +141,7 @@ export class TransactionInstance {
    *  host: localhost,
    *  port: 8080,
    *  ledger: 'test/transaction',
-   * }).connect();
+   * });
    *
    * const transaction = client
    *  .transact({

@@ -15,7 +15,6 @@ describe('FlureeClient', () => {
       const client = new FlureeClient({
         host: 'localhost',
         port: 8080,
-        ledger: 'fluree-client/client',
       });
       expect(client).toBeInstanceOf(FlureeClient);
     });
@@ -30,7 +29,6 @@ describe('FlureeClient', () => {
       try {
         await new FlureeClient({
           port: 8080,
-          ledger: 'fluree-client/client',
         }).connect();
       } catch (e) {
         error = e;
@@ -44,7 +42,6 @@ describe('FlureeClient', () => {
         await new FlureeClient({
           host: 'localhost',
           isFlureeHosted: true,
-          ledger: process.env.TEST_NEXUS_LEDGER,
         }).connect();
       } catch (e) {
         hostError = e;
@@ -54,7 +51,6 @@ describe('FlureeClient', () => {
         await new FlureeClient({
           port: 8090,
           isFlureeHosted: true,
-          ledger: process.env.TEST_NEXUS_LEDGER,
         }).connect();
       } catch (e) {
         portError = e;
@@ -68,7 +64,6 @@ describe('FlureeClient', () => {
       const logSpy = jest.spyOn(console, 'warn').mockImplementation();
       new FlureeClient({
         isFlureeHosted: true,
-        ledger: process.env.TEST_NEXUS_LEDGER,
       });
       expect(logSpy).toHaveBeenCalled();
     });
@@ -91,21 +86,19 @@ describe('FlureeClient', () => {
     it('can configure FlureeClient', () => {
       const client = new FlureeClient({
         host: 'localhost',
-        port: 8080,
-        ledger: 'fluree-client/test',
+        port: 8090,
       });
       const configuredClient = client.configure({
-        ledger: 'fluree-client/newTest',
+        port: 8080,
       });
       expect(configuredClient).toBeInstanceOf(FlureeClient);
-      expect(configuredClient.config.ledger).toEqual('fluree-client/newTest');
+      expect(configuredClient.config.port).toEqual(8080);
     });
 
     it('can update context with configure', () => {
       const client = new FlureeClient({
         host: 'localhost',
         port: 8080,
-        ledger: 'fluree-client/test',
         defaultContext: 'https://ns.flur.ee/ledger#',
       });
       const configuredClient = client.configure({
@@ -264,7 +257,7 @@ describe('FlureeClient', () => {
   });
 
   describe('transact()', () => {
-    it('can create a transaction instance', async () => {
+    it('can create a transaction instance with a configured ledger', async () => {
       const client = await new FlureeClient({
         host: process.env.FLUREE_CLIENT_TEST_HOST,
         port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
@@ -279,11 +272,27 @@ describe('FlureeClient', () => {
       expect(transactionInstance).toBeInstanceOf(TransactionInstance);
     }, 20000);
 
-    it('throws error if not connected', async () => {
-      const client = new FlureeClient({
-        host: 'localhost',
-        port: 8080,
+    it('can create a transaction instance without a configured ledger if ledger is specified at transaction time', async () => {
+      const client = await new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+      });
+      const transactionInstance = client.transact({
         ledger: 'fluree-client/test',
+        insert: {
+          message: 'success',
+        },
+      });
+      expect(transactionInstance.getTransaction().ledger).toEqual(
+        'fluree-client/test',
+      );
+      expect(transactionInstance).toBeInstanceOf(TransactionInstance);
+    }, 20000);
+
+    it('cannot create a transaction instance if neither a ledger is configured on client nor if ledger is specified at transaction time', async () => {
+      const client = await new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
       });
       let error;
       try {
@@ -296,19 +305,61 @@ describe('FlureeClient', () => {
         error = e;
       }
       expect(error).toBeDefined();
+    }, 20000);
+
+    it('throws an error if connect() is called without specifying a ledger in either the config or in the connect call', async () => {
+      const client = new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+      });
+      let error;
+      try {
+        await client.connect();
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeDefined();
+
+      let error2;
+      try {
+        await client.connect('fluree-client/test');
+      } catch (e) {
+        error2 = e;
+      }
+      expect(error2).toBeUndefined();
+      expect(client.config.ledger).toEqual('fluree-client/test');
+    }, 20000);
+
+    it('does not throw error if not connected', async () => {
+      const client = new FlureeClient({
+        host: 'localhost',
+        port: 8080,
+        ledger: 'fluree-client/test',
+      });
+      let error;
+      try {
+        client.transact({
+          insert: {
+            '@id': 'test-message',
+            message: 'success',
+          },
+        });
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeUndefined();
 
       let error2;
       try {
         client.upsert({
-          insert: {
-            message: 'success',
-          },
+          '@id': 'test-message',
+          message: 'even better success',
         });
       } catch (e) {
         error2 = e;
       }
 
-      expect(error2).toBeDefined();
+      expect(error2).toBeUndefined();
     });
 
     it('can translate delete(id: string) into transactionInstance', async () => {
@@ -317,7 +368,7 @@ describe('FlureeClient', () => {
         port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
         ledger: uuid(),
         create: true,
-      }).connect();
+      });
 
       const deleteTransaction = client.delete('ex:freddy');
       const transactionBody = deleteTransaction.getTransaction();
@@ -678,7 +729,7 @@ describe('FlureeClient', () => {
   });
 
   describe('query()', () => {
-    it('throws error if not connected', async () => {
+    it('does not throw error if not connected', async () => {
       const client = new FlureeClient({
         host: 'localhost',
         port: 8080,
@@ -692,7 +743,7 @@ describe('FlureeClient', () => {
       } catch (e) {
         error = e;
       }
-      expect(error).toBeDefined();
+      expect(error).toBeUndefined();
     });
 
     it('returns expected query results', async () => {
@@ -748,7 +799,7 @@ describe('FlureeClient', () => {
   });
 
   describe('history()', () => {
-    it('throws error if not connected', async () => {
+    it('does not throw error if not connected', async () => {
       const client = new FlureeClient({
         host: 'localhost',
         port: 8080,
@@ -763,7 +814,7 @@ describe('FlureeClient', () => {
       } catch (e) {
         error = e;
       }
-      expect(error).toBeDefined();
+      expect(error).toBeUndefined();
     });
   });
 
