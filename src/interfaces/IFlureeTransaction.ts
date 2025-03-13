@@ -1,3 +1,4 @@
+import { ValuesStatement } from 'src/types/ValuesTypes';
 import { ContextStatement } from '../types/ContextTypes';
 import { DeleteStatement, InsertStatement } from '../types/TransactionTypes';
 import { WhereStatement } from '../types/WhereTypes';
@@ -5,6 +6,7 @@ import { QueryOpts } from './IFlureeQuery';
 
 export interface IFlureeTransaction {
   ['@context']?: ContextStatement;
+  values?: ValuesStatement;
   ledger?: string;
   insert?: InsertStatement;
   delete?: DeleteStatement;

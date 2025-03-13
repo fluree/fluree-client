@@ -1,13 +1,13 @@
 import { FlureeClient } from './core/FlureeClient';
 export default FlureeClient;
-import { IFlureeConfig } from './interfaces/IFlureeConfig';
-import { IFlureeQuery } from './interfaces/IFlureeQuery';
-import { IFlureeTransaction } from './interfaces/IFlureeTransaction';
-import { IFlureeHistoryQuery } from './interfaces/IFlureeHistoryQuery';
+import type { IFlureeConfig } from './interfaces/IFlureeConfig';
+import type { IFlureeQuery } from './interfaces/IFlureeQuery';
+import type { IFlureeTransaction } from './interfaces/IFlureeTransaction';
+import type { IFlureeHistoryQuery } from './interfaces/IFlureeHistoryQuery';
 export {
   FlureeClient,
-  IFlureeConfig,
-  IFlureeQuery,
-  IFlureeTransaction,
-  IFlureeHistoryQuery,
+  type IFlureeConfig,
+  type IFlureeQuery,
+  type IFlureeTransaction,
+  type IFlureeHistoryQuery,
 };

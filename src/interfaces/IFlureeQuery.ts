@@ -1,6 +1,8 @@
-import { SelectArray, SelectStatement } from "../types/SelectTypes";
-import { WhereStatement } from "../types/WhereTypes";
-import { ContextStatement } from "../types/ContextTypes";
+import { SelectArray, SelectStatement } from '../types/SelectTypes';
+import { WhereStatement } from '../types/WhereTypes';
+import { ContextStatement } from '../types/ContextTypes';
+import { ValuesStatement } from 'src/types/ValuesTypes';
+import { InsertStatement } from 'src/types/TransactionTypes';
 
 export interface SelectObject {
   [key: string]: SelectArray | SelectObject;
@@ -8,8 +10,10 @@ export interface SelectObject {
 
 export interface QueryOpts {
   meta?: boolean;
-  role?: string;
-  did?: string;
+  role?: string[] | { '@id': string }[];
+  did?: string | { '@id': string };
+  policyClass?: string[] | { '@id': string }[];
+  policy?: InsertStatement;
 }
 
 export interface IFlureeQuery {
@@ -20,7 +24,8 @@ export interface IFlureeQuery {
   from?: string | Array<string>;
   opts?: QueryOpts;
   t?: string;
-  ["@context"]?: ContextStatement;
+  values?: ValuesStatement;
+  ['@context']?: ContextStatement;
   groupBy?: string;
   orderBy?: string | Array<string>;
   having?: string | Array<string>;
