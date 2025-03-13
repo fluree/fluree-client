@@ -27,9 +27,15 @@ export class QueryInstance {
   query;
   config;
   signedQuery = '';
-  constructor(query: IFlureeQuery, config: IFlureeConfig) {
+  fetchOptions;
+  constructor(
+    query: IFlureeQuery,
+    config: IFlureeConfig,
+    fetchOptions?: RequestInit,
+  ) {
     this.query = query;
     this.config = config;
+    this.fetchOptions = fetchOptions;
 
     if (this.config.defaultContext || this.query['@context']) {
       const defaultContext = this.config.defaultContext || {};
@@ -56,6 +62,7 @@ export class QueryInstance {
       this.config,
       'query',
       contentType,
+      this.fetchOptions,
     );
     fetchOptions.body = this.signedQuery || JSON.stringify(this.query);
 

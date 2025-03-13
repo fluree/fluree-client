@@ -14,6 +14,7 @@ export interface IFlureeTransaction {
 
 export interface IFlureeCreateTransaction {
   ['@context']?: ContextStatement;
+  ledger?: string;
   insert: InsertStatement;
   opts?: QueryOpts;
 }

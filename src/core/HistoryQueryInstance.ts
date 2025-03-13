@@ -27,7 +27,12 @@ export class HistoryQueryInstance {
   query;
   config;
   signedQuery = '';
-  constructor(query: IFlureeHistoryQuery, config: IFlureeConfig) {
+  fetchOptions;
+  constructor(
+    query: IFlureeHistoryQuery,
+    config: IFlureeConfig,
+    fetchOptions?: RequestInit,
+  ) {
     if (!query.history && !query['commit-details']) {
       throw new ApplicationError(
         'either the history or commit-details key is required',
@@ -37,6 +42,7 @@ export class HistoryQueryInstance {
     }
     this.query = query;
     this.config = config;
+    this.fetchOptions = fetchOptions;
 
     if (config.signMessages) {
       this.sign();
@@ -57,6 +63,7 @@ export class HistoryQueryInstance {
       this.config,
       'history',
       contentType,
+      this.fetchOptions,
     );
     fetchOptions.body = this.signedQuery || JSON.stringify(this.query);
 

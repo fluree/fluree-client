@@ -128,6 +128,40 @@ describe('FlureeClient', () => {
       expect(client).toBeInstanceOf(FlureeClient);
     });
 
+    it('throws an error if attempting to create a ledger w/out a ledger configured or provided', async () => {
+      const client = new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        create: true,
+      });
+      let error;
+      try {
+        await client.connect();
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeDefined();
+    });
+
+    it('throws an error if providing invalid data when creating a ledger', async () => {
+      const client = new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+      });
+      let error;
+      try {
+        await client.create(uuid(), {
+          '@context': {
+            ex: 'http://example.org/',
+          },
+          insert: { '@id': true },
+        });
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeDefined();
+    });
+
     it('can connect to a fluree-hosted ledger', async () => {
       const client = new FlureeClient({
         isFlureeHosted: true,
@@ -427,6 +461,20 @@ describe('FlureeClient', () => {
       expect(whereStatement[0]).toHaveProperty('id');
     });
 
+    it('throws an error if using delete() with no ledger configured or provided', async () => {
+      const client = new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+      });
+      let error;
+      try {
+        client.delete('ex:freddy');
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeDefined();
+    });
+
     it('can effectively retract subjects from ledger when using delete()', async () => {
       const client = await new FlureeClient({
         host: process.env.FLUREE_CLIENT_TEST_HOST,
@@ -537,6 +585,23 @@ describe('FlureeClient', () => {
       expect(upsertTransaction).toBeInstanceOf(TransactionInstance);
       expect(transactionBody).toHaveProperty('where');
       expect(transactionBody).toHaveProperty('delete');
+    });
+
+    it('throws an error if using upsert() with no ledger configured or provided', async () => {
+      const client = new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+      });
+      let error;
+      try {
+        client.upsert({
+          '@id': 'ex:freddy',
+          name: 'Freddy the Yeti',
+        });
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeDefined();
     });
 
     it('can translate upsert() into transactionInstances with custom idAlias', async () => {
@@ -815,6 +880,23 @@ describe('FlureeClient', () => {
         error = e;
       }
       expect(error).toBeUndefined();
+    });
+
+    it('throws an error if ledger is neither configured nor provided', async () => {
+      const client = new FlureeClient({
+        host: 'localhost',
+        port: 8080,
+      });
+      let error;
+      try {
+        client.history({
+          'commit-details': true,
+          t: { at: 'latest' },
+        });
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeDefined();
     });
   });
 

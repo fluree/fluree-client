@@ -27,9 +27,15 @@ export class TransactionInstance {
   transaction;
   config;
   signedTransaction = '';
-  constructor(transaction: IFlureeTransaction, config: IFlureeConfig) {
+  fetchOptions;
+  constructor(
+    transaction: IFlureeTransaction,
+    config: IFlureeConfig,
+    fetchOptions?: RequestInit,
+  ) {
     this.transaction = transaction;
     this.config = config;
+    this.fetchOptions = fetchOptions;
 
     if (this.config.defaultContext || this.transaction['@context']) {
       const defaultContext = this.config.defaultContext || {};
@@ -59,6 +65,7 @@ export class TransactionInstance {
       this.config,
       'transact',
       contentType,
+      this.fetchOptions,
     );
     fetchOptions.body =
       this.signedTransaction || JSON.stringify(this.transaction);

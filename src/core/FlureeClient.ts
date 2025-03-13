@@ -233,16 +233,24 @@ export class FlureeClient {
     transaction?: IFlureeCreateTransaction,
   ): Promise<void> {
     const { signMessages, privateKey } = this.config;
-
+    const ledger = transaction?.ledger || ledgerName || this.config.ledger;
+    if (!ledger) {
+      throw new ApplicationError(
+        'No ledger name provided. When using create() or connect(), a ledger name is required either on FlureeClient config, as a parameter, or in the transaction',
+        'CLIENT_ERROR',
+        null,
+      );
+    }
     const url = getFlureeBaseUrlFromConfig(this.config) + '/create';
     let body: IFlureeTransaction = {
-      ledger: ledgerName || this.config.ledger,
+      ledger,
       insert: { message: 'success' },
     };
     if (transaction) {
       body = {
         ...body,
         ...transaction,
+        ledger,
       };
     }
     let headers = {
@@ -294,6 +302,7 @@ export class FlureeClient {
   /**
    * Creates a new QueryInstance for querying the Fluree database. The QueryInstance can be used & re-used to build, sign, and send queries to the Fluree instance.
    * @param query {IFlureeQuery} - The query to send to the Fluree instance
+   * @param fetchOptions - Optional fetch options to include in the request
    * @returns QueryInstance
    * @example
    * const client = await new FlureeClient({
@@ -308,7 +317,7 @@ export class FlureeClient {
    *
    * const response = await queryInstance.send();
    */
-  query(query: IFlureeQuery): QueryInstance {
+  query(query: IFlureeQuery, fetchOptions?: RequestInit): QueryInstance {
     const { from } = query;
     if (!this.config.ledger && !from) {
       throw new ApplicationError(
@@ -320,12 +329,13 @@ export class FlureeClient {
     if (!from) {
       query.from = this.config.ledger;
     }
-    return new QueryInstance(query, this.config);
+    return new QueryInstance(query, this.config, fetchOptions);
   }
 
   /**
    * Creates a new TransactionInstance for transacting with the Fluree database. The TransactionInstance can be used & re-used to build, sign, and send transactions to the Fluree instance.
    * @param transaction {IFlureeTransaction} - The transaction to send to the Fluree instance
+   * @param fetchOptions - Optional fetch options to include in the request
    * @returns TransactionInstance
    * @example
    * const client = await new FlureeClient({
@@ -340,7 +350,10 @@ export class FlureeClient {
    *
    * const response = await transaction.send();
    */
-  transact(transaction: IFlureeTransaction): TransactionInstance {
+  transact(
+    transaction: IFlureeTransaction,
+    fetchOptions?: RequestInit,
+  ): TransactionInstance {
     const { ledger } = transaction;
     if (!this.config.ledger && !ledger) {
       throw new ApplicationError(
@@ -352,7 +365,7 @@ export class FlureeClient {
     if (!ledger) {
       transaction.ledger = this.config.ledger;
     }
-    return new TransactionInstance(transaction, this.config);
+    return new TransactionInstance(transaction, this.config, fetchOptions);
   }
 
   /**
@@ -365,6 +378,7 @@ export class FlureeClient {
    * This means that facts in your transaction should be inserted (if new) and should replace existing facts (if they exist on those subjects & properties).
    * @param transaction {UpsertStatement} - The upsert transaction to send to the Fluree instance
    * @param ledger - The ledger to use for the upsert transaction. If not provided, the ledger from the configuration will be used.
+   * @param fetchOptions - Optional fetch options to include in the request
    * @returns TransactionInstance
    * @example
    * // Existing data:
@@ -387,7 +401,11 @@ export class FlureeClient {
    * // Note that if this had been an "insert" freddy would now have two names.
    * // Note also that if this had been handled by deleting/insert, alice might have lost her name.
    */
-  upsert(transaction: UpsertStatement, ledger?: string): TransactionInstance {
+  upsert(
+    transaction: UpsertStatement,
+    ledger?: string,
+    fetchOptions?: RequestInit,
+  ): TransactionInstance {
     if (!this.config.ledger && !ledger) {
       throw new ApplicationError(
         'must either configure a ledger on FlureClient or provide a "ledger" in the transaction',
@@ -398,7 +416,11 @@ export class FlureeClient {
     const idAlias = findIdAlias(this.config.defaultContext || {});
     const resultTransaction = handleUpsert(transaction, idAlias);
     resultTransaction.ledger = ledger || this.config.ledger;
-    return new TransactionInstance(resultTransaction, this.config);
+    return new TransactionInstance(
+      resultTransaction,
+      this.config,
+      fetchOptions,
+    );
   }
 
   /**
@@ -409,6 +431,7 @@ export class FlureeClient {
    * Delete assumes that all facts for the provided subjects should be retracted from the database.
    * @param id string | string[] - The subject identifier or identifiers to retract from the Fluree instance
    * @param ledger - The ledger to use for the delete transaction. If not provided, the ledger from the configuration will be used.
+   * @param fetchOptions - Optional fetch options to include in the request
    * @returns TransactionInstance
    * @example
    * // Existing data:
@@ -424,7 +447,11 @@ export class FlureeClient {
    * //   { "@id": "alice", "name": "Alice", "age": 25 }
    * // ]
    */
-  delete(id: string | string[], ledger?: string): TransactionInstance {
+  delete(
+    id: string | string[],
+    ledger?: string,
+    fetchOptions?: RequestInit,
+  ): TransactionInstance {
     if (!this.config.ledger && !ledger) {
       throw new ApplicationError(
         'must either configure a ledger on FlureClient or provide a "ledger" in the call to delete',
@@ -435,12 +462,17 @@ export class FlureeClient {
     const idAlias = findIdAlias(this.config.defaultContext || {});
     const resultTransaction = handleDelete(id, idAlias);
     resultTransaction.ledger = ledger || this.config.ledger;
-    return new TransactionInstance(resultTransaction, this.config);
+    return new TransactionInstance(
+      resultTransaction,
+      this.config,
+      fetchOptions,
+    );
   }
 
   /**
    * Creates a new HistoryQueryInstance for querying the history of the Fluree database. The HistoryQueryInstance can be used & re-used to build, sign, and send history queries to the Fluree instance.
    * @param query {IFlureeHistoryQuery} - The history query to send to the Fluree instance
+   * @param fetchOptions - Optional fetch options to include in the request
    * @returns HistoryQueryInstance
    * @example
    * const client = await new FlureeClient({
@@ -456,7 +488,10 @@ export class FlureeClient {
    *
    * const response = await historyQuery.send();
    */
-  history(query: IFlureeHistoryQuery): HistoryQueryInstance {
+  history(
+    query: IFlureeHistoryQuery,
+    fetchOptions?: RequestInit,
+  ): HistoryQueryInstance {
     const { from } = query;
     if (!this.config.ledger && !from) {
       throw new ApplicationError(
@@ -468,7 +503,7 @@ export class FlureeClient {
     if (!from) {
       query.from = this.config.ledger;
     }
-    return new HistoryQueryInstance(query, this.config);
+    return new HistoryQueryInstance(query, this.config, fetchOptions);
   }
 
   /**
