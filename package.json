@@ -1,6 +1,6 @@
 {
   "name": "@fluree/fluree-client",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Fluree client library for Node.js and browser environments",
   "type": "module",
   "main": "./dist/nodejs/index.js",
