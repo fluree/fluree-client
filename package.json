@@ -64,7 +64,7 @@
     "karma-jasmine": "^5.1.0",
     "karma-jasmine-html-reporter": "^2.1.0",
     "karma-mocha": "^2.0.1",
-    "karma-typescript": "^5.5.4",
+    "karma-typescript": "^6.5.1",
     "karma-typescript-es6-transform": "^5.5.4",
     "karma-webpack": "^5.0.1",
     "mocha": "^10.8.2",
