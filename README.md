@@ -811,3 +811,78 @@ npm start
 ```
 
 This will open your default browser to the example page. Click the "Run Query" button to execute the example operations.
+
+## Contributing & Deployment
+
+### Preparing for NPM Deployment
+
+Before deploying a new version to npm, contributing developers should follow these steps:
+
+#### 1. Pre-deployment Checklist
+
+Ensure all changes are properly tested and ready:
+
+```bash
+# Run the full test suite (includes Node.js and browser tests)
+npm test
+
+# Run linting to ensure code quality
+npm run lint
+
+# Build the project to verify compilation
+npm run build
+```
+
+#### 2. Version Management
+
+Update the package version following semantic versioning:
+
+```bash
+# For patch releases (bug fixes)
+npm version patch
+
+# For minor releases (new features, backward compatible)
+npm version minor
+
+# For major releases (breaking changes)
+npm version major
+```
+
+This will automatically:
+- Update `package.json` version
+- Create a git tag
+- Run the `prepare` script (builds the project)
+
+#### 3. Publishing to NPM
+
+The project uses npm hooks to ensure quality before publishing:
+
+```bash
+# This will automatically run:
+# 1. npm run test (full test suite)
+# 2. npm run lint (code quality check)
+# 3. Publish to npm if all checks pass
+npm publish
+```
+
+#### 4. Important Notes
+
+- **Automated Testing**: The `prepublishOnly` script ensures tests and linting pass before any npm publish
+- **Build Process**: The `prepare` script runs automatically during `npm install` and before publishing
+- **Browser Support**: Tests include both Node.js and browser environments via Karma
+- **Docker Integration**: Tests use testcontainers to ensure consistent Fluree server environment
+
+#### 5. Troubleshooting Deployment Issues
+
+If deployment fails:
+
+1. **Test Failures**: Run `npm test` locally to identify and fix failing tests
+2. **Lint Errors**: Run `npm run lint` to see and fix code quality issues
+3. **Build Issues**: Run `npm run build` to check for TypeScript compilation errors
+4. **Docker Issues**: Ensure Docker is running for integration tests
+
+The build creates multiple output formats:
+- `dist/nodejs/` - Node.js CommonJS and ES modules
+- `dist/browser/` - Minified browser bundle
+
+All outputs include TypeScript declaration files for proper IDE support.

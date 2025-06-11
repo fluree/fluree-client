@@ -1,4 +1,5 @@
 /* eslint-disable jsdoc/require-jsdoc */
+import { ValuesStatement } from 'src/types/ValuesTypes';
 import { IFlureeTransaction } from '../interfaces/IFlureeTransaction';
 import { DeleteStatement, InsertStatement } from '../types/TransactionTypes';
 import {
@@ -95,15 +96,18 @@ export function convertTxnToWhereDelete(
 export function generateWhereDeleteForIds(
   ids: string[],
   idAlias: string,
-): WhereArray {
+): { where: WhereArray; values: ValuesStatement } {
   const where: WhereArray = [];
+  const values: ValuesStatement = ['?s', []];
   for (const index in ids) {
-    where.push({
-      [idAlias]: ids[index],
-      [`?p${index}`]: `?o${index}`,
-    });
+    values[1].push({ '@type': '@id', '@value': ids[index] });
   }
-  return where;
+  where.push({
+    [idAlias]: '?s',
+    '?p': '?o',
+  });
+
+  return { where, values };
 }
 
 export const handleUpsert = (
@@ -129,9 +133,13 @@ export const handleDelete = (
 ): IFlureeTransaction => {
   const idList = !Array.isArray(id) ? [id] : id;
 
-  const whereDelete = generateWhereDeleteForIds(idList, idAlias);
+  const { where: whereDelete, values } = generateWhereDeleteForIds(
+    idList,
+    idAlias,
+  );
 
   return {
+    values,
     where: whereDelete as WhereStatement,
     delete: whereDelete as DeleteStatement,
   };

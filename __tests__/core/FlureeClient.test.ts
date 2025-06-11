@@ -8,6 +8,7 @@ import {
   WhereOperation,
 } from '../../src/types/WhereTypes';
 import { DeleteObject } from '../../src/types/TransactionTypes';
+import { SingleVariableValues, TypedValue } from 'src/types/ValuesTypes';
 
 describe('FlureeClient', () => {
   describe('constructor', () => {
@@ -408,17 +409,30 @@ describe('FlureeClient', () => {
       const transactionBody = deleteTransaction.getTransaction();
 
       expect(deleteTransaction).toBeInstanceOf(TransactionInstance);
+      expect(transactionBody).toHaveProperty('values');
       expect(transactionBody).toHaveProperty('where');
       expect(transactionBody.where).toHaveLength(1);
       const whereStatement = transactionBody.where as Array<WhereObject>;
       expect(whereStatement[0]).toHaveProperty('@id');
-      expect(whereStatement[0]['@id']).toEqual('ex:freddy');
+      expect(whereStatement[0]['@id']).toEqual('?s');
+
+      const valuesStatement = transactionBody.values as SingleVariableValues;
+      expect(valuesStatement).toBeInstanceOf(Array);
+      expect(valuesStatement).toHaveLength(2);
+      expect(valuesStatement[1]).toBeInstanceOf(Array);
+      expect(valuesStatement[1]).toHaveLength(1);
+      expect(valuesStatement[1][0]).toBeInstanceOf(Object);
+      const typedValue = valuesStatement[1][0] as TypedValue;
+      expect(typedValue).toHaveProperty('@type');
+      expect(typedValue['@type']).toEqual('@id');
+      expect(typedValue).toHaveProperty('@value');
+      expect(typedValue['@value']).toEqual('ex:freddy');
 
       expect(transactionBody).toHaveProperty('delete');
       expect(transactionBody.delete).toHaveLength(1);
       const deleteStatement = transactionBody.where as Array<DeleteObject>;
       expect(deleteStatement[0]).toHaveProperty('@id');
-      expect(deleteStatement[0]['@id']).toBe('ex:freddy');
+      expect(deleteStatement[0]['@id']).toBe('?s');
     });
 
     it('can translate delete(id: string[]) into transactionInstance', async () => {
@@ -433,10 +447,37 @@ describe('FlureeClient', () => {
       const transactionBody = deleteTransaction.getTransaction();
 
       expect(deleteTransaction).toBeInstanceOf(TransactionInstance);
+      expect(transactionBody).toHaveProperty('values');
       expect(transactionBody).toHaveProperty('where');
-      expect(transactionBody.where).toHaveLength(2);
+      expect(transactionBody.where).toHaveLength(1);
+      const whereStatement = transactionBody.where as Array<WhereObject>;
+      expect(whereStatement[0]).toHaveProperty('@id');
+      expect(whereStatement[0]['@id']).toEqual('?s');
+      expect(whereStatement[0]).toHaveProperty('?p');
+      expect(whereStatement[0]['?p']).toEqual('?o');
+
+      const valuesStatement = transactionBody.values as SingleVariableValues;
+      expect(valuesStatement).toBeInstanceOf(Array);
+      expect(valuesStatement).toHaveLength(2);
+      expect(valuesStatement[1]).toBeInstanceOf(Array);
+      expect(valuesStatement[1]).toHaveLength(2);
+
+      const typedValuesList = valuesStatement[1] as Array<TypedValue>;
+      expect(typedValuesList[0]).toBeInstanceOf(Object);
+      const expectedValueValues = ['ex:freddy', 'ex:letty'];
+      for (const typedValue of typedValuesList) {
+        expect(typedValue).toHaveProperty('@type');
+        expect(typedValue['@type']).toEqual('@id');
+        expect(typedValue['@value']).toBeDefined();
+        expect(expectedValueValues).toContain(typedValue['@value']);
+      }
       expect(transactionBody).toHaveProperty('delete');
-      expect(transactionBody.delete).toHaveLength(2);
+      expect(transactionBody.delete).toHaveLength(1);
+      const deleteStatement = transactionBody.where as Array<DeleteObject>;
+      expect(deleteStatement[0]).toHaveProperty('@id');
+      expect(deleteStatement[0]['@id']).toBe('?s');
+      expect(deleteStatement[0]).toHaveProperty('?p');
+      expect(deleteStatement[0]['?p']).toEqual('?o');
     });
 
     it('can translate delete() into transactionInstances with custom idAlias', async () => {

@@ -1,8 +1,12 @@
 {
   "images": [
     {
+      "tag": "824e76db98a606cb1feedb01e572a687238de9bf",
+      "description": "Current stable version / June 10 2025"
+    },
+    {
       "tag": "0d411e4b2c4f1269dc538c65072fd479db9e2e64",
-      "description": "Current stable version / March 12 2025"
+      "description": "March 12 2025"
     },
     {
       "tag": "7ca39f4b5c5c31602b44873cc19d313d33a99382",
@@ -19,13 +23,9 @@
     {
       "tag": "5839ffe273062b8da972b120deb54dd62e7c3d1f",
       "description": "November 5 2024"
-    },
-    {
-      "tag": "c452631c50b8f8e595d486240dab503bbaad6033",
-      "description": "October 30 2024"
     }
   ],
-  "defaultImage": "0d411e4b2c4f1269dc538c65072fd479db9e2e64",
+  "defaultImage": "824e76db98a606cb1feedb01e572a687238de9bf",
   "containerPort": 8090,
   "hostPort": 8095
 }

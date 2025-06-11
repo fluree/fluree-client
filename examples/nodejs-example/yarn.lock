@@ -3,7 +3,7 @@
 
 
 "@fluree/fluree-client@file:../..":
-  version "1.0.13"
+  version "1.2.3"
   resolved "file:../.."
   dependencies:
     "@fluree/crypto" "^3.0.0"
