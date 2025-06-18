@@ -43,7 +43,7 @@ describe('TransactionInstance', () => {
     expect(error).toBeDefined();
   });
 
-  it('throws error on invalid transaction on fluree-hosted', async () => {
+  it.skip('throws error on invalid transaction on fluree-hosted', async () => {
     const client = await new FlureeClient({
       isFlureeHosted: true,
       ledger: process.env.TEST_NEXUS_LEDGER,

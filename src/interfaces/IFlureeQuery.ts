@@ -31,4 +31,5 @@ export interface IFlureeQuery {
   having?: string | Array<string>;
   limit?: number;
   offset?: number;
+  depth?: number;
 }

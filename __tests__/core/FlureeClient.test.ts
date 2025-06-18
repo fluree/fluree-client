@@ -1131,7 +1131,7 @@ describe('FlureeClient', () => {
       expect(result2).toBeDefined();
     });
 
-    it('can also transact sign messages to a fluree-hosted ledger', async () => {
+    it.skip('can also transact sign messages to a fluree-hosted ledger', async () => {
       const client = await new FlureeClient({
         isFlureeHosted: true,
         ledger: process.env.TEST_NEXUS_LEDGER,
