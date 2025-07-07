@@ -81,7 +81,7 @@
     "webpack": "^5.96.1"
   },
   "dependencies": {
-    "@fluree/crypto": "^3.0.0",
+    "@fluree/crypto": "^3.0.1",
     "@types/uuid": "^9.0.8",
     "cross-fetch": "^4.0.0",
     "dotenv": "^16.4.1",
