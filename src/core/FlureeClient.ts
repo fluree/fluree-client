@@ -169,6 +169,24 @@ export class FlureeClient {
   }
 
   /**
+   * Pings a fluree ledger to check if it exists
+   * @param ledgerName - OPTIONAL - The name of the ledger to connect to. If not provided, the query function will default to config ledger
+   * @returns Promise<boolean>
+   */
+  async #pingLedger(ledgerName?: string): Promise<boolean> {
+    try {
+      await this.query({
+        ...(ledgerName ? { from: ledgerName } : {}),
+        select: {"PING": ["*"]},
+        limit: 1,
+      }).send();
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
    * Connect to the Fluree instance. This will test the connection and create the ledger if it does not exist.
    * This is now an optional method to validate a connection with a particular ledger.
    *
@@ -188,11 +206,14 @@ export class FlureeClient {
     this.#checkConfig(this.config, true);
     this.connected = true;
     try {
-      if (this.config.create) {
-        await this.#createLedger(ledgerName);
-      }
       if (ledgerName) {
         this.config.ledger = ledgerName;
+      }
+      if (this.config.create) {
+        const ledgerExists = await this.#pingLedger(ledgerName);
+        if (!ledgerExists) {
+          await this.#createLedger(ledgerName);
+        }
       }
       await this.#testLedgers();
     } catch (error) {
