@@ -1,4 +1,37 @@
-import { ContextStatement } from '../types/ContextTypes';
+import {
+  ContextWithInsertObject,
+  ContextWithInsertStatement,
+  InsertStatement,
+  UpsertStatement,
+} from 'src/types/TransactionTypes';
+import { ContextMap, ContextStatement } from '../types/ContextTypes';
+
+/**
+ * Merges two context maps, removing keys from the first context that map to values
+ * that the second context also maps to, unless they are the same key.
+ * The second context's mappings take precedence.
+ * @param context1 the first context map
+ * @param context2 the second context map
+ * @returns a new context map that is the result of merging context2 into context1
+ */
+function mergeObjectContexts(
+  context1: ContextMap,
+  context2: ContextMap,
+): ContextMap {
+  const result = { ...context1 };
+
+  // Remove keys from context1 that map to values that context2 also maps to
+  for (const [key2, value2] of Object.entries(context2)) {
+    for (const [key1, value1] of Object.entries(context1)) {
+      if (value1 === value2 && key1 !== key2) {
+        delete result[key1];
+      }
+    }
+  }
+
+  // Add context2's mappings (these take precedence)
+  return { ...result, ...context2 };
+}
 
 /**
  *
@@ -8,7 +41,7 @@ import { ContextStatement } from '../types/ContextTypes';
  */
 export function mergeContexts(
   context1: ContextStatement,
-  context2: ContextStatement
+  context2: ContextStatement,
 ): ContextStatement {
   if (typeof context1 === 'string') {
     if (typeof context2 === 'string') {
@@ -35,7 +68,8 @@ export function mergeContexts(
     } else if (Array.isArray(context2)) {
       return [context1, ...context2];
     } else {
-      return { ...context1, ...context2 };
+      // Both are objects - need to handle conflicts
+      return mergeObjectContexts(context1, context2);
     }
   }
 }
@@ -65,6 +99,104 @@ export function findIdAlias(context: ContextStatement): string {
     }
     return result;
   }
+}
+
+/**
+ * Check if the object is a ContextWithInsertStatement
+ * @param obj the object to check
+ * @returns true if the object is a ContextWithInsertStatement, false otherwise
+ */
+export function isContextWithInsertStatment(
+  obj: UpsertStatement,
+): obj is ContextWithInsertStatement {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    '@context' in obj &&
+    '@graph' in obj
+  );
+}
+
+/**
+ * Check if the object is a ContextWithInsertObject
+ * @param obj the object to check
+ * @returns true if the object is a ContextWithInsertObject, false otherwise
+ */
+export function isContextWithInsertObject(
+  obj: UpsertStatement,
+): obj is ContextWithInsertObject {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    '@context' in obj &&
+    !('@graph' in obj)
+  );
+}
+
+/**
+ * Check if the object is an UpsertStatement with a context
+ * @param obj the object to check
+ * @returns true if the object is an UpsertStatement with a context, false otherwise
+ */
+export function isUpsertWithContext(
+  obj: UpsertStatement,
+): obj is ContextWithInsertStatement | ContextWithInsertObject {
+  return isContextWithInsertStatment(obj) || isContextWithInsertObject(obj);
+}
+
+/**
+ * Check if the object is a plain InsertStatement
+ * @param obj the object to check
+ * @returns true if the object is a plain InsertStatement, false otherwise
+ */
+export function isInsertStatement(
+  obj: UpsertStatement,
+): obj is InsertStatement {
+  return typeof obj === 'object' && obj !== null && !('@context' in obj);
+}
+
+/**
+ * Extracts the context and body from an UpsertStatement.
+ * If the statement is an InsertStatement, it returns the body as is.
+ * If it has a context, it separates the context and body.
+ * @param transaction the UpsertStatement to extract from
+ * @returns an object containing the context and body
+ */
+export function extractContextAndBody(transaction: UpsertStatement) {
+  if (isInsertStatement(transaction)) {
+    return { context: undefined, body: transaction };
+  } else if (isContextWithInsertObject(transaction)) {
+    const { '@context': context, ...body } = transaction;
+    return { context, body };
+  } else {
+    return {
+      context: transaction['@context'],
+      body: transaction['@graph'],
+    };
+  }
+}
+
+/**
+ * Resolves the ID alias from the local context or the default context.
+ * If the local context has a different alias than '@id', it returns that.
+ * If not, it checks the default context for an alias.
+ * If both contexts use '@id', it returns '@id'.
+ * @param localContext the local context to check
+ * @param defaultContext the default context to check
+ * @returns the resolved ID alias
+ */
+export function resolveIdAlias(
+  localContext?: ContextStatement,
+  defaultContext?: ContextStatement,
+) {
+  const localIdAlias = findIdAlias(localContext || {});
+  const defaultIdAlias = findIdAlias(defaultContext || {});
+
+  return localIdAlias !== '@id'
+    ? localIdAlias
+    : defaultIdAlias !== '@id'
+    ? defaultIdAlias
+    : '@id';
 }
 
 // /**

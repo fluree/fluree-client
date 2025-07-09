@@ -7,7 +7,12 @@ import {
 } from '../interfaces/IFlureeTransaction';
 import { ContextStatement } from '../types/ContextTypes';
 import { UpsertStatement } from '../types/TransactionTypes';
-import { findIdAlias, mergeContexts } from '../utils/contextHandler';
+import {
+  extractContextAndBody,
+  findIdAlias,
+  mergeContexts,
+  resolveIdAlias,
+} from '../utils/contextHandler';
 import { handleDelete, handleUpsert } from '../utils/transactionUtils';
 import { ApplicationError, HttpError } from './Error';
 import { HistoryQueryInstance } from './HistoryQueryInstance';
@@ -413,9 +418,16 @@ export class FlureeClient {
         null,
       );
     }
-    const idAlias = findIdAlias(this.config.defaultContext || {});
-    const resultTransaction = handleUpsert(transaction, idAlias);
+
+    const { context, body } = extractContextAndBody(transaction);
+    const idAlias = resolveIdAlias(context, this.config.defaultContext);
+    const resultTransaction = handleUpsert(body, idAlias);
+
     resultTransaction.ledger = ledger || this.config.ledger;
+
+    if (context) {
+      resultTransaction['@context'] = context;
+    }
     return new TransactionInstance(
       resultTransaction,
       this.config,

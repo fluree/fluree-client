@@ -1,5 +1,14 @@
+import { ContextStatement } from './ContextTypes';
+
 type InsertObject = {
-  [key: string]: string | string[] | number | number[] | boolean | boolean[] | InsertStatement;
+  [key: string]:
+    | string
+    | string[]
+    | number
+    | number[]
+    | boolean
+    | boolean[]
+    | InsertStatement;
 };
 
 export type InsertArray = Array<InsertObject>;
@@ -14,4 +23,17 @@ export type InsertStatement = InsertObject | InsertArray;
 
 export type DeleteStatement = DeleteObject | DeleteArray;
 
-export type UpsertStatement = InsertStatement;
+export type ContextWithInsertObject = {
+  '@context': ContextStatement;
+} & InsertObject;
+
+export type ContextWithInsertStatement = {
+  '@context': ContextStatement;
+  '@graph': InsertStatement;
+};
+
+// Updated UpsertStatement
+export type UpsertStatement =
+  | InsertStatement
+  | ContextWithInsertObject
+  | ContextWithInsertStatement;

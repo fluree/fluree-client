@@ -249,4 +249,292 @@ describe('TransactionInstance', () => {
       ).toBe(JSON.stringify('http://example.org/'));
     });
   });
+
+  describe('upsert', () => {
+    it('can handle plain InsertStatement upsert', async () => {
+      const client = await new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: 'fluree-client/upsert-plain',
+        create: true,
+      }).connect();
+
+      const response = await client
+        .upsert({
+          '@id': 'ex:test1',
+          'ex:name': 'Test Object',
+        })
+        .send();
+
+      const queryResponse = await client
+        .query({
+          select: { 'ex:test1': ['*'] },
+        })
+        .send();
+
+      expect(response).toBeDefined();
+      expect(queryResponse).toBeDefined();
+      expect(queryResponse[0]).toBeDefined();
+      expect(queryResponse[0]['ex:name']).toBe('Test Object');
+    });
+
+    it('can handle ContextWithInsertObject upsert', async () => {
+      const client = await new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: 'fluree-client/upsert-context-object',
+        create: true,
+      }).connect();
+
+      const response = await client
+        .upsert({
+          '@context': {
+            ex: 'http://example.org/',
+            name: 'ex:name',
+          },
+          '@id': 'ex:test2',
+          name: 'Test Object with Context',
+        })
+        .send();
+
+      const queryResponse = await client
+        .query({
+          select: { 'http://example.org/test2': ['*'] },
+        })
+        .send();
+
+      expect(response).toBeDefined();
+      expect(queryResponse).toBeDefined();
+      expect(queryResponse[0]).toBeDefined();
+      expect(queryResponse[0]['http://example.org/name']).toBe(
+        'Test Object with Context',
+      );
+    });
+
+    it('can handle ContextWithInsertStatement upsert', async () => {
+      const client = await new FlureeClient({
+        host: process.env.FLUREE_CLIENT_TEST_HOST,
+        port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+        ledger: 'fluree-client/upsert-context-statement',
+        create: true,
+      }).connect();
+
+      const response = await client
+        .upsert({
+          '@context': {
+            ex: 'http://example.org/',
+            name: 'ex:name',
+          },
+          '@graph': [
+            {
+              '@id': 'ex:test3',
+              name: 'Test Object 1',
+            },
+            {
+              '@id': 'ex:test4',
+              name: 'Test Object 2',
+            },
+          ],
+        })
+        .send();
+
+      const queryResponse = await client
+        .query({
+          select: {
+            'http://example.org/test3': ['*'],
+          },
+        })
+        .send();
+
+      expect(response).toBeDefined();
+      expect(queryResponse).toBeDefined();
+      expect(queryResponse[0]).toBeDefined();
+      expect(queryResponse[0]['http://example.org/name']).toBe('Test Object 1');
+    });
+
+    describe('id alias resolution', () => {
+      it('resolves id alias from local context when different from @id', async () => {
+        const client = await new FlureeClient({
+          host: process.env.FLUREE_CLIENT_TEST_HOST,
+          port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+          ledger: 'fluree-client/upsert-local-alias',
+          create: true,
+          defaultContext: {
+            '@id': '@id',
+            ex: 'http://example.org/',
+          },
+        }).connect();
+
+        const response = await client
+          .upsert({
+            '@context': {
+              ex: 'http://example.org/',
+              identifier: '@id',
+            },
+            identifier: 'ex:test5',
+            'ex:name': 'Test with local id alias',
+          })
+          .send();
+
+        const queryResponse = await client
+          .query({
+            select: { 'http://example.org/test5': ['*'] },
+          })
+          .send();
+
+        expect(response).toBeDefined();
+        expect(queryResponse).toBeDefined();
+        expect(queryResponse[0]).toBeDefined();
+        expect(queryResponse[0]['ex:name']).toBe('Test with local id alias');
+      });
+
+      it('falls back to default context id alias when local context uses @id', async () => {
+        const client = await new FlureeClient({
+          host: process.env.FLUREE_CLIENT_TEST_HOST,
+          port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+          ledger: 'fluree-client/upsert-default-alias',
+          create: true,
+          defaultContext: {
+            ex: 'http://example.org/',
+            id: '@id',
+          },
+        }).connect();
+
+        const response = await client
+          .upsert({
+            '@context': {
+              ex: 'http://example.org/',
+            },
+            id: 'ex:test6',
+            'ex:name': 'Test with default context id alias',
+          })
+          .send();
+
+        const queryResponse = await client
+          .query({
+            select: { 'http://example.org/test6': ['*'] },
+          })
+          .send();
+
+        expect(response).toBeDefined();
+        expect(queryResponse).toBeDefined();
+        expect(queryResponse[0]).toBeDefined();
+        expect(queryResponse[0]['ex:name']).toBe(
+          'Test with default context id alias',
+        );
+      });
+
+      it('uses @id when both contexts use @id', async () => {
+        const client = await new FlureeClient({
+          host: process.env.FLUREE_CLIENT_TEST_HOST,
+          port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+          ledger: 'fluree-client/upsert-standard-id',
+          create: true,
+        }).connect();
+
+        const response = await client
+          .upsert({
+            '@context': {
+              ex: 'http://example.org/',
+            },
+            '@id': 'ex:test7',
+            'ex:name': 'Test with standard @id',
+          })
+          .send();
+
+        const queryResponse = await client
+          .query({
+            select: { 'http://example.org/test7': ['*'] },
+          })
+          .send();
+
+        expect(response).toBeDefined();
+        expect(queryResponse).toBeDefined();
+        expect(queryResponse[0]).toBeDefined();
+        expect(queryResponse[0]['http://example.org/name']).toBe(
+          'Test with standard @id',
+        );
+      });
+
+      it('prioritizes local context alias over default context alias', async () => {
+        const client = await new FlureeClient({
+          host: process.env.FLUREE_CLIENT_TEST_HOST,
+          port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+          ledger: 'fluree-client/upsert-priority-test',
+          create: true,
+          defaultContext: {
+            ex: 'http://example.org/',
+            shouldNotBeId: '@id',
+          },
+        }).connect();
+
+        const response = await client
+          .upsert({
+            '@context': {
+              ex: 'http://example.org/',
+              shouldBeId: '@id',
+            },
+            shouldBeId: 'ex:test8',
+            shouldNotBeId: 'foobar',
+            'ex:name': 'Test local context priority',
+          })
+          .send();
+
+        const queryResponse = await client
+          .query({
+            select: { 'http://example.org/test8': ['*'] },
+          })
+          .send();
+
+        expect(response).toBeDefined();
+        expect(queryResponse).toBeDefined();
+        expect(queryResponse[0]).toBeDefined();
+        expect(queryResponse[0]['ex:name']).toBe('Test local context priority');
+      });
+
+      it('handles ContextWithInsertStatement with id alias resolution', async () => {
+        const client = await new FlureeClient({
+          host: process.env.FLUREE_CLIENT_TEST_HOST,
+          port: Number(process.env.FLUREE_CLIENT_TEST_PORT),
+          ledger: 'fluree-client/upsert-graph-alias',
+          create: true,
+          defaultContext: {
+            ex: 'http://example.org/',
+            name: 'ex:name',
+          },
+        }).connect();
+
+        const response = await client
+          .upsert({
+            '@context': {
+              identifier: '@id',
+            },
+            '@graph': [
+              {
+                identifier: 'ex:test9',
+                name: 'Test Graph Object 1',
+              },
+              {
+                identifier: 'ex:test10',
+                name: 'Test Graph Object 2',
+              },
+            ],
+          })
+          .send();
+
+        const queryResponse = await client
+          .query({
+            select: {
+              'http://example.org/test9': ['*'],
+            },
+          })
+          .send();
+
+        expect(response).toBeDefined();
+        expect(queryResponse).toBeDefined();
+        expect(queryResponse[0]).toBeDefined();
+        expect(queryResponse[0]['name']).toBe('Test Graph Object 1');
+      });
+    });
+  });
 });
