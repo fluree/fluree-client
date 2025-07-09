@@ -380,6 +380,8 @@ export class FlureeClient {
    *
    * Upsert assumes that the facts provided in the transaction should be treated as the true & accurate state of the data after the transaction is processed.
    *
+   * The UpsertStatement can either be a plan InsertStatement, a single-entity object w/ `@context`, or an object with `@context` and `@graph` (for upserting against multiple entities).
+   *
    * This means that facts in your transaction should be inserted (if new) and should replace existing facts (if they exist on those subjects & properties).
    * @param transaction {UpsertStatement} - The upsert transaction to send to the Fluree instance
    * @param ledger - The ledger to use for the upsert transaction. If not provided, the ledger from the configuration will be used.
