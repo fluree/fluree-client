@@ -2,7 +2,7 @@ import { IFlureeConfig } from '../interfaces/IFlureeConfig';
 import { IFlureeTransaction } from '../interfaces/IFlureeTransaction';
 import { mergeContexts } from '../utils/contextHandler';
 import { generateFetchParams } from '../utils/fetchOptions';
-import { createJWS } from '../utils/crypto';
+import { createJWS } from '@fluree/crypto';
 import { ApplicationError, HttpError } from './Error';
 import fetch from 'cross-fetch';
 

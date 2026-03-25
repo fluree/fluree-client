@@ -1,5 +1,5 @@
 import { FlureeClient } from '../../src';
-import { verifyJWS } from '../../src/utils/crypto';
+import { verifyJWS } from '@fluree/crypto';
 import { v4 as uuid } from 'uuid';
 import { ApplicationError, HttpError } from '../../src/core/Error';
 

@@ -1,4 +1,4 @@
-import { createJWS } from '../utils/crypto';
+import { createJWS } from '@fluree/crypto';
 import { IFlureeConfig } from '../interfaces/IFlureeConfig';
 import { IFlureeHistoryQuery } from '../interfaces/IFlureeHistoryQuery';
 import { generateFetchParams } from '../utils/fetchOptions';

@@ -24,7 +24,7 @@ import {
   publicKeyFromPrivate,
   didKeyFromPublic,
   createJWS,
-} from '../utils/crypto';
+} from '@fluree/crypto';
 import { getFlureeBaseUrlFromConfig } from '../utils/fetchOptions';
 
 /**

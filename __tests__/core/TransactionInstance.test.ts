@@ -1,5 +1,5 @@
 import { FlureeClient } from '../../src';
-import { verifyJWS } from '../../src/utils/crypto';
+import { verifyJWS } from '@fluree/crypto';
 import { mergeContexts } from '../../src/utils/contextHandler';
 
 describe('TransactionInstance', () => {
