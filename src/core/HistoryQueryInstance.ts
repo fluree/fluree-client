@@ -1,5 +1,4 @@
-import flureeCrypto from '@fluree/crypto';
-const { createJWS } = flureeCrypto;
+import { createJWS } from '../utils/crypto';
 import { IFlureeConfig } from '../interfaces/IFlureeConfig';
 import { IFlureeHistoryQuery } from '../interfaces/IFlureeHistoryQuery';
 import { generateFetchParams } from '../utils/fetchOptions';

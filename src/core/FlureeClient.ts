@@ -19,10 +19,13 @@ import { HistoryQueryInstance } from './HistoryQueryInstance';
 import { QueryInstance } from './QueryInstance';
 import { TransactionInstance } from './TransactionInstance';
 import fetch from 'cross-fetch';
-import flureeCrypto from '@fluree/crypto';
+import {
+  generateKeyPair as genKeyPair,
+  publicKeyFromPrivate,
+  didKeyFromPublic,
+  createJWS,
+} from '../utils/crypto';
 import { getFlureeBaseUrlFromConfig } from '../utils/fetchOptions';
-const { generateKeyPair, pubKeyFromPrivate, accountIdFromPublic, createJWS } =
-  flureeCrypto;
 
 /**
  * FlureeClient is the main class for interacting with FlureeDB
@@ -258,15 +261,13 @@ export class FlureeClient {
         ledger,
       };
     }
-    let headers = {
+    let headers: { 'Content-Type': string } = {
       'Content-Type': 'application/json',
     };
     let finalBody = JSON.stringify(body);
     if (signMessages && privateKey) {
       finalBody = createJWS(finalBody, privateKey);
-      headers = {
-        'Content-Type': 'application/jwt',
-      };
+      headers = { 'Content-Type': 'application/jwt' };
     }
 
     try {
@@ -545,9 +546,8 @@ export class FlureeClient {
    *  .send();
    */
   setKey(privateKey: string): FlureeClient {
-    const publicKey = pubKeyFromPrivate(privateKey);
-    const accountId = accountIdFromPublic(publicKey);
-    const did = `did:fluree:${accountId}`;
+    const publicKey = publicKeyFromPrivate(privateKey);
+    const did = didKeyFromPublic(publicKey);
     this.configure({ privateKey, publicKey, did });
     return this;
   }
@@ -569,9 +569,8 @@ export class FlureeClient {
    * const did = generatedClient.getDid();
    */
   generateKeyPair(): FlureeClient {
-    const { private: privateKey, public: publicKey } = generateKeyPair();
-    const accountId = accountIdFromPublic(publicKey);
-    const did = `did:fluree:${accountId}`;
+    const { private: privateKey, public: publicKey } = genKeyPair(null);
+    const did = didKeyFromPublic(publicKey);
     this.configure({ privateKey, publicKey, did });
     return this;
   }

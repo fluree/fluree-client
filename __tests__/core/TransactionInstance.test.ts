@@ -1,6 +1,5 @@
 import { FlureeClient } from '../../src';
-import flureeCrypto from '@fluree/crypto';
-const { verifyJWS } = flureeCrypto;
+import { verifyJWS } from '../../src/utils/crypto';
 import { mergeContexts } from '../../src/utils/contextHandler';
 
 describe('TransactionInstance', () => {
@@ -137,18 +136,9 @@ describe('TransactionInstance', () => {
         })
         .getSignedTransaction();
 
-      const verificationResult = verifyJWS(signedTransaction);
-
-      if (!verificationResult) {
-        fail('Verification failed');
-      }
-
-      const { payload, pubkey } = verificationResult as {
-        payload: string;
-        pubkey: string;
-      };
-
       const publicKey = client.getPublicKey();
+      const verificationResult = verifyJWS(signedTransaction, publicKey);
+      const { payload, pubkey } = verificationResult;
 
       expect(pubkey).toBeDefined();
       expect(pubkey).toBe(publicKey);
