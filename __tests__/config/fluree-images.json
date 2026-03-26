@@ -1,8 +1,12 @@
 {
   "images": [
     {
+      "tag": "latest",
+      "description": "Latest stable version / August 19 2025"
+    },
+    {
       "tag": "824e76db98a606cb1feedb01e572a687238de9bf",
-      "description": "Current stable version / June 10 2025"
+      "description": "June 10 2025"
     },
     {
       "tag": "0d411e4b2c4f1269dc538c65072fd479db9e2e64",
@@ -25,7 +29,7 @@
       "description": "November 5 2024"
     }
   ],
-  "defaultImage": "824e76db98a606cb1feedb01e572a687238de9bf",
-  "containerPort": 8090,
+  "defaultImage": "latest",
+  "containerPort": 58090,
   "hostPort": 8095
 }
