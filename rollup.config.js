@@ -4,7 +4,11 @@ import commonjs from '@rollup/plugin-commonjs';
 import terser from '@rollup/plugin-terser';
 import dts from 'rollup-plugin-dts';
 
-const external = ['@fluree/crypto', 'cross-fetch', 'dotenv', 'tslib', 'uuid'];
+// For Node.js builds: treat crypto deps and their subpaths as external
+const nodeExternalPkgs = ['@fluree/crypto', 'cross-fetch', 'dotenv', 'tslib', 'uuid'];
+const nodeExternal = (id) => nodeExternalPkgs.some((pkg) => id === pkg || id.startsWith(pkg + '/'));
+const browserExternalPkgs = ['@fluree/crypto', 'cross-fetch', 'dotenv', 'uuid'];
+const browserExternal = (id) => browserExternalPkgs.some((pkg) => id === pkg || id.startsWith(pkg + '/'));
 
 const typescriptPlugin = typescript({
   tsconfig: './tsconfig.json',
@@ -23,7 +27,7 @@ export default [
       sourcemap: true,
       exports: 'named',
     },
-    external,
+    external: nodeExternal,
     plugins: [resolve(), commonjs(), typescriptPlugin],
   },
   // CommonJS build
@@ -35,10 +39,10 @@ export default [
       sourcemap: true,
       exports: 'named',
     },
-    external,
+    external: nodeExternal,
     plugins: [resolve(), commonjs(), typescriptPlugin],
   },
-  // Browser UMD build
+  // Browser UMD build — crypto deps are bundled for a self-contained browser bundle
   {
     input: 'src/index.ts',
     output: {
@@ -48,11 +52,12 @@ export default [
       sourcemap: true,
       exports: 'named',
       globals: {
-        '@fluree/crypto': 'FlureeCrypto',
         'cross-fetch': 'fetch',
         uuid: 'uuid',
+        '@fluree/crypto': 'FlureeCrypto',
       },
     },
+    external: browserExternal,
     plugins: [
       resolve({
         browser: true,

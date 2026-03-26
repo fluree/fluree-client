@@ -25,7 +25,7 @@
     "build": "npm run clean && rollup -c",
     "pretest": "scripts/start-fluree.sh",
     "posttest": "scripts/stop-fluree.sh",
-    "test:node": "jest --silent=false --forceExit",
+    "test:node": "NODE_OPTIONS='--experimental-vm-modules' jest --silent=false --forceExit",
     "test:browser": "npm run pretest && karma start karma.conf.cjs && npm run posttest",
     "test": "npm run test:node && npm run test:browser",
     "test:all-images": "node scripts/test-all-images.js",
@@ -81,7 +81,7 @@
     "webpack": "^5.96.1"
   },
   "dependencies": {
-    "@fluree/crypto": "^3.0.1",
+    "@fluree/crypto": "^4.0.1",
     "@types/uuid": "^9.0.8",
     "cross-fetch": "^4.0.0",
     "dotenv": "^16.4.1",

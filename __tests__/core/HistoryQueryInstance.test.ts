@@ -1,6 +1,5 @@
 import { FlureeClient } from '../../src';
-import flureeCrypto from '@fluree/crypto';
-const { verifyJWS } = flureeCrypto;
+import { verifyJWS } from '@fluree/crypto';
 import { v4 as uuid } from 'uuid';
 import { ApplicationError, HttpError } from '../../src/core/Error';
 
@@ -67,9 +66,6 @@ describe('HistoryQueryInstance', () => {
     }
     expect(error).toBeDefined();
     expect(error).toBeInstanceOf(HttpError);
-    // if (error instanceof FlureeError) {
-    //   expect(error.message).toMatch(/db\/invalid-query/);
-    // }
   });
 
   it('can use sign() to sign a history query', async () => {
@@ -150,18 +146,9 @@ describe('HistoryQueryInstance', () => {
       })
       .getSignedQuery();
 
-    const verificationResult = verifyJWS(signedQuery);
-
-    if (!verificationResult) {
-      fail('Verification failed');
-    }
-
-    const { payload, pubkey } = verificationResult as {
-      payload: string;
-      pubkey: string;
-    };
-
     const publicKey = client.getPublicKey();
+    const verificationResult = verifyJWS(signedQuery, publicKey);
+    const { payload, pubkey } = verificationResult;
 
     expect(pubkey).toBeDefined();
     expect(pubkey).toBe(publicKey);
